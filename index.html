@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v2.2</title>
+    <title>TikTok Overlay Premium v2.3</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -11,17 +11,17 @@
         body { margin: 0; background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: sans-serif; }
         #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
         .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 280px; text-align: center; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 240px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 85vh; }
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 230px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 85vh; }
         .hidden { display: none !important; }
         .photo-el { position: absolute; background-size: cover; background-position: center; border: 2px solid white; border-radius: 50%; pointer-events: none; transition: opacity 0.5s; }
         
-        input[type="text"], input[type="number"], input[type="email"], input[type="password"] { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
-        label { font-size: 11px; font-weight: bold; margin-top: 10px; display: block; color: #333; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
+        label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #444; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .morph-list { text-align: left; background: #f9f9f9; padding: 8px; border-radius: 5px; margin-top: 5px; }
-        .morph-item { display: flex; align-items: center; font-size: 12px; margin-bottom: 5px; cursor: pointer; }
-        .morph-item input { margin-right: 8px; }
-        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #eef; padding: 8px; border-radius: 5px; }
+        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 6px; border-radius: 5px; }
+        .checklist-group { text-align: left; background: #f9f9f9; padding: 8px; border-radius: 5px; margin-top: 5px; border: 1px solid #eee; }
+        .check-item { display: flex; align-items: center; font-size: 12px; margin-bottom: 4px; color: #333; }
+        .check-item input { width: auto; margin-right: 8px; margin-top: 0; }
     </style>
 </head>
 <body>
@@ -44,28 +44,31 @@
         </div>
     </div>
 
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px;" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:2px solid #ddd;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
-        <h4 style="margin:0 0 5px 0">⚙️ Pengaturan Overlay</h4>
+        <h4 style="margin:0 0 10px 0">⚙️ Pengaturan Live</h4>
         
         <label>Username TikTok Target:</label>
         <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
 
-        <label>Aktifkan Perubahan Wujud (Gift Mawar):</label>
-        <div class="morph-list">
-            <label class="morph-item"><input type="checkbox" class="morph-check" value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> 🐸 Kodok</label>
-            <label class="morph-item"><input type="checkbox" class="morph-check" value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> 🐷 Babi (Biaya)</label>
-            <label class="morph-item"><input type="checkbox" class="morph-check" value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> 🐱 Kucing</label>
-            <label class="morph-item"><input type="checkbox" class="morph-check" value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> 🦎 Ciktak</label>
-            <label class="morph-item"><input type="checkbox" class="morph-check" value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> 🦧 Orang Utan</label>
-            <label class="morph-item"><input type="checkbox" class="morph-check" value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> 🐟 Ikan Mas</label>
+        <label style="color:#d63384">Target Gift (Misal: Rose / Doughnut):</label>
+        <input type="text" id="giftTarget" value="Rose" placeholder="Ketik nama Gift">
+
+        <label>Ubah Gift Terpilih Jadi:</label>
+        <div class="checklist-group">
+            <div class="check-item"><input type="checkbox" class="m-check" value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</div>
+            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Babi</div>
+            <div class="check-item"><input type="checkbox" class="m-check" value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing</div>
+            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi Ciktak</div>
+            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang Utan</div>
+            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi Ikan Mas</div>
         </div>
 
-        <label>Ukuran (Pixel) & Waktu (Detik):</label>
+        <label>Ukuran (Pixel) & Durasi (Detik):</label>
         <div style="display:flex; gap:5px;">
-            <input type="number" id="sizeIn" value="100" placeholder="Size">
-            <input type="number" id="timeIn" value="10" placeholder="Sec">
+            <input type="number" id="sizeIn" value="100">
+            <input type="number" id="timeIn" value="10">
         </div>
 
         <div class="switch-box">
@@ -74,7 +77,7 @@
         </div>
 
         <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
-        <button onclick="auth.signOut(); location.reload();" style="background:#ddd; color:black; font-size:10px;">Logout Akun</button>
+        <button onclick="auth.signOut(); location.reload();" style="background:#eee; color:red; font-size:10px;">Logout</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -92,8 +95,6 @@
         const auth = firebase.auth();
         const db = firebase.database();
         const socket = io();
-
-        let currentUser = null;
 
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
@@ -115,7 +116,6 @@
 
         auth.onAuthStateChanged(user => {
             if (user) {
-                currentUser = user;
                 db.ref('users/' + user.uid).on('value', snap => {
                     if (!snap.val()) { auth.signOut(); return; }
                     document.getElementById('auth-container').classList.add('hidden');
@@ -138,29 +138,32 @@
         }
 
         function konek() {
-            const checks = document.querySelectorAll('.morph-check:checked');
-            const selectedMorphs = Array.from(checks).map(c => c.value);
+            const selectedMorphs = [];
+            document.querySelectorAll('.m-check:checked').forEach(c => selectedMorphs.push(c.value));
             
             const config = {
                 user: document.getElementById('userIn').value,
                 size: document.getElementById('sizeIn').value,
                 time: document.getElementById('timeIn').value,
+                giftName: document.getElementById('giftTarget').value,
                 morphs: selectedMorphs
             };
             socket.emit('setTarget', config);
             toggleMenu();
-            speak("Koneksi dimulai");
+            speak("Menghubungkan Target");
         }
 
         socket.on('munculFoto', (data) => {
             const el = document.createElement('div');
             el.className = 'photo-el';
             
-            // Logika Pilih Hewan Acak dari Ceklis
             let imgUrl = data.url;
-            if (data.giftName === 'Rose' && data.config.morphs && data.config.morphs.length > 0) {
-                const randomIdx = Math.floor(Math.random() * data.config.morphs.length);
-                imgUrl = data.config.morphs[randomIdx];
+            // Cek apakah Gift yang masuk sama dengan Gift Target di pengaturan
+            if (data.giftName && data.giftName.toLowerCase() === data.config.giftName.toLowerCase()) {
+                if (data.config.morphs && data.config.morphs.length > 0) {
+                    const rand = Math.floor(Math.random() * data.config.morphs.length);
+                    imgUrl = data.config.morphs[rand];
+                }
             }
 
             el.style.backgroundImage = `url('${imgUrl}')`;
@@ -168,10 +171,10 @@
             el.style.width = size; el.style.height = size;
             document.body.appendChild(el);
 
-            if (data.giftName) speak(`${data.nickname} memberikan ${data.giftName}`);
+            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
 
-            let x = Math.random() * (window.innerWidth - parseInt(data.config.size));
-            let y = Math.random() * (window.innerHeight - parseInt(data.config.size));
+            let x = Math.random() * (window.innerWidth - parseInt(data.config.size || 100));
+            let y = Math.random() * (window.innerHeight - parseInt(data.config.size || 100));
             el.style.transform = `translate(${x}px, ${y}px)`;
 
             setTimeout(() => { 
