@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium</title>
+    <title>TikTok Overlay Premium v2.1</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -13,91 +13,94 @@
         .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 280px; text-align: center; }
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
         .hidden { display: none !important; }
-        .photo-el { position: absolute; background-size: cover; background-position: center; border: 2px solid white; pointer-events: none; }
+        .photo-el { position: absolute; background-size: cover; background-position: center; border: 2px solid white; border-radius: 50%; pointer-events: none; transition: opacity 0.5s; }
         
-        @keyframes getar {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            50% { transform: translate(3px, 2px) rotate(-1deg); }
-            100% { transform: translate(1px, -1px) rotate(0deg); }
-        }
-        .animasi-getar { animation: getar 0.2s infinite; }
-
-        input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
+        label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .btn-pay { background: #28a745; color: white; margin-top: 5px; }
+        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 5px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
     <div id="auth-container">
         <div class="box" id="login-form">
-            <h3>Masuk ke Akun</h3>
+            <h3>Masuk Akun</h3>
             <input type="email" id="l-email" placeholder="Email">
             <input type="password" id="l-pass" placeholder="Password">
             <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
-            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="showReg()">Daftar di sini</a></p>
+            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="showReg()">Daftar</a></p>
         </div>
 
         <div class="box hidden" id="register-form">
-            <h3>Daftar Akun Baru</h3>
-            <input type="text" id="r-tiktok" placeholder="Username TikTok (Tanpa @)">
+            <h3>Daftar Baru</h3>
+            <input type="text" id="r-tiktok" placeholder="Username TikTok">
             <input type="email" id="r-email" placeholder="Email">
             <input type="password" id="r-pass" placeholder="Password">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR SEKARANG</button>
-            <p style="font-size:12px"><a href="#" onclick="showLogin()">Sudah punya akun? Login</a></p>
-        </div>
-    </div>
-
-    <div id="pay-modal" class="hidden">
-        <div class="box">
-            <h3 style="color:red">Limit Habis!</h3>
-            <p>Silakan pilih paket aktivasi:</p>
-            <button class="btn-pay" onclick="kirimWA('Harian', 5000)">Full 1 Hari - 5rb</button>
-            <button class="btn-pay" onclick="kirimWA('Mingguan', 20000)">1 Minggu - 20rb</button>
-            <button class="btn-pay" onclick="kirimWA('Bulanan', 75000)">1 Bulan - 75rb</button>
-            <button class="btn-pay" onclick="kirimWA('Selamanya', 158000)" style="background:gold; color:black">Selamanya - 158rb</button>
-            <button onclick="location.reload()" style="background:#eee; margin-top:10px;">Cek Status Pembayaran</button>
+            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
+            <p style="font-size:12px"><a href="#" onclick="showLogin()">Balik Login</a></p>
         </div>
     </div>
 
     <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
-        <h4 style="margin:0">Pengaturan Bot</h4>
-        <p id="user-info" style="font-size:11px; color:blue; margin-bottom:10px;"></p>
-        <input type="text" id="userIn" placeholder="Username TikTok">
-        <label style="font-size:12px; margin-top:10px; display:block;">Pemicu Getar (Gift):</label>
-        <input type="text" id="giftGetar" placeholder="Contoh: Rose">
-        <label style="font-size:12px; margin-top:10px; display:block;">Pemicu Beradu (Gift):</label>
-        <input type="text" id="giftAdu" placeholder="Contoh: Donut">
-        <label style="font-size:12px; margin-top:10px; display:block;">Ukuran & Waktu:</label>
+        <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
+        
+        <label>Username TikTok Target:</label>
+        <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
+
+        <label>Jika Ada Gift Rose (Mawar) Jadi:</label>
+        <select id="morphRose">
+            <option value="none">Foto Profil Asli</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/1998/1998614.png"> Jadi Beruang</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing lucu</option>
+            
+            <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Biaya</option>
+            
+         <option value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi ciktak</option>
+            
+         <option value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang utan</option>
+            
+         <option value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi ikan mas</option>
+            
+        </select>
+
+        <label>Ukuran Foto (Pixel):</label>
         <input type="range" id="sizeIn" min="40" max="250" value="100">
-        <input type="number" id="timeIn" value="10" placeholder="Detik">
-        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEKAN</button>
+        
+        <label>Lama Melayang (Detik):</label>
+        <input type="number" id="timeIn" value="10">
+
+        <div class="switch-box">
+            <span>🔊 Suara Google (TTS)</span>
+            <input type="checkbox" id="ttsOn" style="width:20px" checked>
+        </div>
+
+        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
+        <button onclick="auth.signOut(); location.reload();" style="background:#dc3545; color:white; font-size:10px; padding:5px;">Logout Akun</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // FIREBASE CONFIG
         const firebaseConfig = {
-    apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
-    authDomain: "sos-pro-cd66d.firebaseapp.com",
-    databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
-    projectId: "sos-pro-cd66d",
-    storageBucket: "sos-pro-cd66d.appspot.com",
-    messagingSenderId: "879343847954",
-    appId: "1:879343847954:web:cc0b959202055fc252e6cb",
-    measurementId: "G-ZRX2DY3SJ5"
-  };
+            apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
+            authDomain: "sos-pro-cd66d.firebaseapp.com",
+            databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
+            projectId: "sos-pro-cd66d",
+            storageBucket: "sos-pro-cd66d.appspot.com",
+            messagingSenderId: "879343847954",
+            appId: "1:879343847954:web:cc0b959202055fc252e6cb"
+        };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
         const socket = io();
 
         let currentUser = null;
-        let userLimit = 0;
 
-        // --- FUNGSI AUTH ---
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
 
@@ -107,30 +110,25 @@
             const p = document.getElementById('r-pass').value;
             if(!tiktok) return alert("Isi Username TikTok!");
             auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, limit: 10, status: 'free' });
-                alert("Berhasil Daftar!");
+                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free' });
             }).catch(err => alert(err.message));
         }
 
         function login() {
             const e = document.getElementById('l-email').value;
             const p = document.getElementById('l-pass').value;
-            auth.signInWithEmailAndPassword(e, p).catch(err => alert("Email/Pass Salah"));
+            auth.signInWithEmailAndPassword(e, p).catch(() => alert("Email/Password Salah!"));
         }
 
-        // --- AUTO LOGIN & DATA ---
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUser = user;
-                document.getElementById('auth-container').classList.add('hidden');
-                document.getElementById('btnT').classList.remove('hidden');
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
-                    userLimit = data.limit;
-                    document.getElementById('user-info').innerText = `TikTok: ${data.tiktokUser} | Limit: ${userLimit}`;
+                    if (!data) { auth.signOut(); return; }
+                    document.getElementById('auth-container').classList.add('hidden');
+                    document.getElementById('btnT').classList.remove('hidden');
                     document.getElementById('userIn').value = data.tiktokUser;
-                    if (userLimit <= 0) document.getElementById('pay-modal').classList.remove('hidden');
-                    else document.getElementById('pay-modal').classList.add('hidden');
                 });
             } else {
                 document.getElementById('auth-container').classList.remove('hidden');
@@ -138,49 +136,57 @@
         });
 
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
-        
+
+        function speak(text) {
+            if (!document.getElementById('ttsOn').checked) return;
+            window.speechSynthesis.cancel();
+            const ut = new SpeechSynthesisUtterance(text);
+            ut.lang = 'id-ID';
+            window.speechSynthesis.speak(ut);
+        }
+
         function konek() {
-            if (userLimit <= 0) return;
             const config = {
                 user: document.getElementById('userIn').value,
                 size: document.getElementById('sizeIn').value,
                 time: document.getElementById('timeIn').value,
-                pemicuGetar: document.getElementById('giftGetar').value,
-                pemicuAdu: document.getElementById('giftAdu').value
+                morph: document.getElementById('morphRose').value
             };
             socket.emit('setTarget', config);
-            db.ref('users/' + currentUser.uid).update({ limit: userLimit - 1 });
             toggleMenu();
-        }
-
-        function kirimWA(paket, harga) {
-            const msg = `Halo Admin, saya mau beli paket *${paket}* seharga Rp${harga}. Email: ${currentUser.email}`;
-            window.open(`https://wa.me/6283815565900?text=${encodeURIComponent(msg)}`);
+            speak("Menghubungkan ke " + config.user);
         }
 
         socket.on('munculFoto', (data) => {
             const el = document.createElement('div');
             el.className = 'photo-el';
-            if (data.giftName && data.giftName === data.config.pemicuGetar) el.classList.add('animasi-getar');
-            let speedMult = (data.giftName && data.giftName === data.config.pemicuAdu) ? 4 : 1;
-            el.style.backgroundImage = "url('" + data.url + "')";
-            document.body.appendChild(el);
-            const size = parseInt(data.config.size);
-            let x = Math.random() * (window.innerWidth - size);
-            let y = Math.random() * (window.innerHeight - size);
-            let dx = (Math.random() - 0.5) * 6 * speedMult;
-            let dy = (Math.random() - 0.5) * 6 * speedMult;
-            function move() {
-                x += dx; y += dy;
-                if (x + size >= window.innerWidth || x <= 0) dx *= -1;
-                if (y + size >= window.innerHeight || y <= 0) dy *= -1;
-                el.style.width = size + 'px'; el.style.height = size + 'px';
-                el.style.transform = `translate(${x}px, ${y}px)`;
-                if (el.style.opacity !== '0') requestAnimationFrame(move);
+            
+            let imgUrl = data.url;
+            if (data.giftName === 'Rose' && data.config.morph !== 'none') {
+                imgUrl = data.config.morph;
             }
-            move();
-            setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 500); }, data.config.time * 1000);
+
+            el.style.backgroundImage = `url('${imgUrl}')`;
+            const size = data.config.size + 'px';
+            el.style.width = size; el.style.height = size;
+            document.body.appendChild(el);
+
+            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
+
+            let x = Math.random() * (window.innerWidth - parseInt(data.config.size));
+            let y = Math.random() * (window.innerHeight - parseInt(data.config.size));
+            el.style.transform = `translate(${x}px, ${y}px)`;
+
+            setTimeout(() => { 
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 500);
+            }, data.config.time * 1000);
         });
+
+        socket.on('chat', (data) => {
+            speak(`${data.nickname} bilang: ${data.comment}`);
+        });
+
     </script>
 </body>
 </html>
