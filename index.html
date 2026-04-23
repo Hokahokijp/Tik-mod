@@ -3,29 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Live Fix - Aa</title>
+    <title>TikTok Overlay Premium v2.1</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body { margin: 0; background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: sans-serif; }
-        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
+        #auth-container, #pay-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
         .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 280px; text-align: center; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 240px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 85vh; }
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
         .hidden { display: none !important; }
+        .photo-el { position: absolute; background-size: cover; background-position: center; border: 2px solid white; border-radius: 50%; pointer-events: none; transition: opacity 0.5s; }
         
-        .photo-el { 
-            position: absolute; 
-            background-size: cover; 
-            background-position: center; 
-            border-radius: 50%; 
-            border: 3px solid #fff;
-            box-shadow: 0 0 15px #00f6ff;
-            pointer-events: none; 
-        }
-        
-        input { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
+        label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
+        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 5px; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -36,36 +29,62 @@
             <input type="email" id="l-email" placeholder="Email">
             <input type="password" id="l-pass" placeholder="Password">
             <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
-            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="toggleAuth(true)">Daftar Akun</a></p>
+            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="showReg()">Daftar</a></p>
         </div>
+
         <div class="box hidden" id="register-form">
             <h3>Daftar Baru</h3>
             <input type="text" id="r-tiktok" placeholder="Username TikTok">
-            <input type="email" id="r-email" placeholder="Email Baru">
-            <input type="password" id="r-pass" placeholder="Password Baru">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR SEKARANG</button>
-            <p style="font-size:12px"><a href="#" onclick="toggleAuth(false)">Kembali Login</a></p>
+            <input type="email" id="r-email" placeholder="Email">
+            <input type="password" id="r-pass" placeholder="Password">
+            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
+            <p style="font-size:12px"><a href="#" onclick="showLogin()">Balik Login</a></p>
         </div>
     </div>
 
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
-        <h4>⚙️ Pengaturan Live</h4>
-        <label style="font-size:11px">Username TikTok Aa:</label>
-        <input type="text" id="userIn">
-        <label style="font-size:11px">Target Gift:</label>
-        <input type="text" id="giftTarget" value="Rose">
-        <div style="display:flex; gap:5px; margin-top:10px;">
-            <input type="number" id="sizeIn" value="120" placeholder="Size">
-            <input type="number" id="timeIn" value="15" placeholder="Detik">
+        <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
+        
+        <label>Username TikTok Target:</label>
+        <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
+
+        <label>Jika Ada Gift Rose (Mawar) Jadi:</label>
+        <select id="morphRose">
+            <option value="none">Foto Profil Asli</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/1998/1998614.png"> Jadi Beruang</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing lucu</option>
+            
+            <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Biaya</option>
+            
+         <option value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi ciktak</option>
+            
+         <option value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang utan</option>
+            
+         <option value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi ikan mas</option>
+            
+        </select>
+
+        <label>Ukuran Foto (Pixel):</label>
+        <input type="range" id="sizeIn" min="40" max="250" value="100">
+        
+        <label>Lama Melayang (Detik):</label>
+        <input type="number" id="timeIn" value="10">
+
+        <div class="switch-box">
+            <span>🔊 Suara Google (TTS)</span>
+            <input type="checkbox" id="ttsOn" style="width:20px" checked>
         </div>
-        <button onclick="konek()" style="background:#28a745; color:white;">MULAI BACA KOMENTAR</button>
-        <button onclick="auth.signOut(); location.reload();" style="color:red; background:none; font-size:10px;">Keluar/Logout</button>
+
+        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
+        <button onclick="auth.signOut(); location.reload();" style="background:#dc3545; color:white; font-size:10px; padding:5px;">Logout Akun</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
             authDomain: "sos-pro-cd66d.firebaseapp.com",
@@ -80,100 +99,94 @@
         const db = firebase.database();
         const socket = io();
 
-        // --- AUTH & DAFTAR (NURUT: BISA DAFTAR SEPUASNYA) ---
-        function toggleAuth(s) { document.getElementById('login-form').classList.toggle('hidden', s); document.getElementById('register-form').classList.toggle('hidden', !s); }
+        let currentUser = null;
+
+        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
+        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
+
         function register() {
-            const t = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
+            const tiktok = document.getElementById('r-tiktok').value;
+            const e = document.getElementById('r-email').value;
+            const p = document.getElementById('r-pass').value;
+            if(!tiktok) return alert("Isi Username TikTok!");
             auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ tiktokUser: t, email: e, status: 'free' });
-                alert("Berhasil Daftar!"); toggleAuth(false);
-            }).catch(a => alert(a.message));
+                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free' });
+            }).catch(err => alert(err.message));
         }
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(a => alert("Gagal!")); }
-        
+
+        function login() {
+            const e = document.getElementById('l-email').value;
+            const p = document.getElementById('l-pass').value;
+            auth.signInWithEmailAndPassword(e, p).catch(() => alert("Email/Password Salah!"));
+        }
+
         auth.onAuthStateChanged(user => {
             if (user) {
+                currentUser = user;
                 db.ref('users/' + user.uid).on('value', snap => {
+                    const data = snap.val();
+                    if (!data) { auth.signOut(); return; }
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('btnT').classList.remove('hidden');
-                    if(snap.val()) document.getElementById('userIn').value = snap.val().tiktokUser;
+                    document.getElementById('userIn').value = data.tiktokUser;
                 });
-            } else { document.getElementById('auth-container').classList.remove('hidden'); }
+            } else {
+                document.getElementById('auth-container').classList.remove('hidden');
+            }
         });
 
-        // --- SISTEM SUARA (NURUT: WAJIB BACA KOMENTAR TANPA MACET) ---
-        let speechQueue = [];
-        let isSpeaking = false;
+        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
+
         function speak(text) {
-            speechQueue.push(text);
-            if (!isSpeaking) nextSpeech();
-        }
-        function nextSpeech() {
-            if (speechQueue.length === 0) { isSpeaking = false; return; }
-            isSpeaking = true;
-            const ut = new SpeechSynthesisUtterance(speechQueue.shift());
+            if (!document.getElementById('ttsOn').checked) return;
+            window.speechSynthesis.cancel();
+            const ut = new SpeechSynthesisUtterance(text);
             ut.lang = 'id-ID';
-            ut.onend = () => { nextSpeech(); };
             window.speechSynthesis.speak(ut);
         }
 
-        // --- SISTEM PROFIL (NURUT: DATANG MUNCUL, PERGI HILANG) ---
-        let usersOnScreen = {};
-        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
+        function konek() {
+            const config = {
+                user: document.getElementById('userIn').value,
+                size: document.getElementById('sizeIn').value,
+                time: document.getElementById('timeIn').value,
+                morph: document.getElementById('morphRose').value
+            };
+            socket.emit('setTarget', config);
+            toggleMenu();
+            speak("Menghubungkan ke " + config.user);
+        }
 
-        function spawnProfile(id, url, config) {
-            if (usersOnScreen[id]) return;
+        socket.on('munculFoto', (data) => {
             const el = document.createElement('div');
             el.className = 'photo-el';
-            el.style.backgroundImage = `url('${url}')`;
-            const s = parseInt(config.size);
-            el.style.width = s+'px'; el.style.height = s+'px';
+            
+            let imgUrl = data.url;
+            if (data.giftName === 'Rose' && data.config.morph !== 'none') {
+                imgUrl = data.config.morph;
+            }
+
+            el.style.backgroundImage = `url('${imgUrl}')`;
+            const size = data.config.size + 'px';
+            el.style.width = size; el.style.height = size;
             document.body.appendChild(el);
-            usersOnScreen[id] = el;
 
-            let px = Math.random() * (window.innerWidth - s), py = Math.random() * (window.innerHeight - s);
-            let vx = (Math.random() - 0.5) * 6, vy = (Math.random() - 0.5) * 6;
-            function move() {
-                if (!usersOnScreen[id]) return;
-                px += vx; py += vy;
-                if (px <= 0 || px >= window.innerWidth - s) vx *= -1;
-                if (py <= 0 || py >= window.innerHeight - s) vy *= -1;
-                el.style.left = px + 'px'; el.style.top = py + 'px';
-                requestAnimationFrame(move);
-            }
-            move();
-        }
+            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
 
-        function removeProfile(id) {
-            if (usersOnScreen[id]) {
-                usersOnScreen[id].remove();
-                delete usersOnScreen[id];
-            }
-        }
+            let x = Math.random() * (window.innerWidth - parseInt(data.config.size));
+            let y = Math.random() * (window.innerHeight - parseInt(data.config.size));
+            el.style.transform = `translate(${x}px, ${y}px)`;
 
-        function konek() {
-            const conf = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value };
-            socket.emit('setTarget', conf);
-            toggleMenu();
-            speak("Sistem diaktifkan, siap membaca komentar.");
-        }
+            setTimeout(() => { 
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 500);
+            }, data.config.time * 1000);
+        });
 
-        // --- EVENT TIKTOK REALTIME ---
         socket.on('chat', (data) => {
-            if(data.comment) speak(data.nickname + " bilang " + data.comment);
+            speak(`${data.nickname} bilang: ${data.comment}`);
         });
 
-        socket.on('memberJoin', (data) => {
-            spawnProfile(data.userId, data.url, data.config);
-        });
-
-        socket.on('memberLeave', (data) => {
-            removeProfile(data.userId);
-        });
-
-        socket.on('gift', (data) => {
-            speak(data.nickname + " kirim " + data.giftName);
-        });
     </script>
 </body>
 </html>
