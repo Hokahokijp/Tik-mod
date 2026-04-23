@@ -10,7 +10,7 @@
     <style>
         body { margin: 0; background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: sans-serif; }
         #auth-container, #pay-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
-        .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 280px; text-align: center; }
+        .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 300px; text-align: center; }
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
         .hidden { display: none !important; }
         
@@ -34,6 +34,9 @@
         label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
         .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 5px; border-radius: 5px; }
+        
+        .btn-paket { background: #28a745; color: white; font-size: 12px; margin-top: 5px; text-align: left; padding: 12px; }
+        .price { float: right; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -41,8 +44,14 @@
     <div id="pay-modal" class="hidden">
         <div class="box">
             <h3 style="color:red; margin:0;">Limit Habis!</h3>
-            <p style="font-size:13px;">Anda sudah menggunakan 10 foto profil gratis. Silakan beli paket untuk melanjutkan.</p>
-            <button onclick="window.open('https://wa.me/YOUR_NUMBER')" style="background:#28a745; color:white;">BELI PAKET</button>
+            <p style="font-size:12px; margin-bottom:10px;">Pilih paket untuk melanjutkan:</p>
+            
+            <button class="btn-paket" onclick="beli('Satu Hari', '11.000')">Paket 1 Hari <span class="price">11rb</span></button>
+            <button class="btn-paket" onclick="beli('Satu Minggu', '65.000')">Paket 1 Minggu <span class="price">65rb</span></button>
+            <button class="btn-paket" onclick="beli('Dua Minggu', '50.000')">Paket 2 Minggu <span class="price">50rb</span></button>
+            <button class="btn-paket" onclick="beli('Satu Bulan', '100.000')">Paket 1 Bulan <span class="price">100rb</span></button>
+            <button class="btn-paket" onclick="beli('Selamanya', '18.900')" style="background:#6f42c1;">Paket Selamanya <span class="price">18.9rb</span></button>
+            
             <button onclick="location.reload()" style="background:#eee; color:black; font-size:10px;">TUTUP</button>
         </div>
     </div>
@@ -118,9 +127,16 @@
 
         let useCount = 0;
         let isPremium = false;
+        let registeredEmail = "";
 
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
+
+        // FUNGSI BELI ARAHKAN KE WA AA
+        function beli(namaPaket, harga) {
+            const pesan = `Halo Bang, saya mau beli Paket ${namaPaket} (Rp ${harga}).%0AEmail Saya: ${registeredEmail}`;
+            window.open(`https://wa.me/6283815564900?text=${pesan}`, '_blank');
+        }
 
         function register() {
             const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
@@ -130,11 +146,12 @@
         }
 
         function login() {
-            auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error!"));
+            auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error Login!"));
         }
 
         auth.onAuthStateChanged(user => {
             if (user) {
+                registeredEmail = user.email;
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
                     if (!data) return;
@@ -171,7 +188,7 @@
         }
 
         socket.on('munculFoto', (data) => {
-            // CEK PAKET PEMBELIAN
+            // CEK LIMIT 10 KALI
             if (!isPremium && useCount >= 10) {
                 document.getElementById('pay-modal').classList.remove('hidden');
                 return;
@@ -188,7 +205,6 @@
             const sizeNum = parseInt(data.config.size);
             el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
             
-            // ANIMASI GLOW BERDASARKAN KOIN/GIFT
             if (data.diamondCount >= 100) el.style.animation = "glow-gold 1s infinite";
             else if (data.diamondCount >= 1) el.style.animation = "glow-red 2s infinite";
 
