@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Bot TikTok</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        .header { background: #1a73e8; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background: #f8f9fa; color: #555; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .badge-free { background: #e9ecef; color: #495057; }
+        .badge-premium { background: #d4edda; color: #155724; }
+        
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #28a745; color: white; }
+        .btn-delete { background: #dc3545; color: white; margin-left: 5px; }
+        
+        .stats { display: flex; gap: 20px; margin-bottom: 20px; }
+        .stat-item { background: white; padding: 15px; border-radius: 10px; flex: 1; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1 style="margin:0">Admin Dashboard 🚀</h1>
+        <p style="margin:5px 0 0 0">Pantau dan kelola pengguna bot kamu</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <div style="font-size: 12px; color: #888;">Total User</div>
+            <div id="total-users" style="font-size: 24px; font-weight: bold;">0</div>
+        </div>
+        <div class="stat-item">
+            <div style="font-size: 12px; color: #888;">User Premium</div>
+            <div id="total-premium" style="font-size: 24px; font-weight: bold; color: #28a745;">0</div>
+        </div>
+    </div>
+
+    <div class="card">
+    <h3>Aktivasi Cepat Paket</h3>
+    <input type="email" id="targetEmail" placeholder="Email User">
+    
+    <button class="btn-add" onclick="updateUser(500, 'Premium', 'Harian')" style="background:#17a2b8">Aktifkan Harian (5rb)</button>
+    
+    <button class="btn-add" onclick="updateUser(2000, 'Premium', 'Mingguan')" style="background:#007bff">Aktifkan Mingguan (20rb)</button>
+    
+    <button class="btn-add" onclick="updateUser(10000, 'Premium', 'Bulanan')" style="background:#28a745">Aktifkan Bulanan (75rb)</button>
+    
+    <button class="btn-add" onclick="updateUser(999999, 'Premium', 'Selamanya')" style="background:gold; color:black;">Aktifkan Selamanya (158rb)</button>
+</div>
+
+    <div class="card">
+        <h3>Daftar Seluruh Pengguna</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Limit</th>
+                    <th>Status</th>
+                    <th>Paket</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="user-table-body">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // GUNAKAN CONFIG FIREBASE KAMU
+            const firebaseConfig = {
+    apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
+    authDomain: "sos-pro-cd66d.firebaseapp.com",
+    databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
+    projectId: "sos-pro-cd66d",
+    storageBucket: "sos-pro-cd66d.appspot.com",
+    messagingSenderId: "879343847954",
+    appId: "1:879343847954:web:cc0b959202055fc252e6cb",
+    measurementId: "G-ZRX2DY3SJ5"
+  };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 1. Ambil data secara Realtime
+    db.ref('users').on('value', snap => {
+        const tableBody = document.getElementById('user-table-body');
+        tableBody.innerHTML = ""; 
+        let total = 0;
+        let premiumCount = 0;
+
+        snap.forEach(child => {
+            const user = child.val();
+            const key = child.key;
+            total++;
+            if(user.status === 'Premium' || user.status === 'premium') premiumCount++;
+
+            let row = `<tr>
+                <td>${user.email}</td>
+                <td><b>${user.limit}</b></td>
+                <td><span class="badge ${user.status === 'Premium' || user.status === 'premium' ? 'badge-premium' : 'badge-free'}">${user.status || 'Free'}</span></td>
+                <td>${user.paket || '-'}</td>
+                <td>
+                    <button class="btn-delete" onclick="hapusUser('${key}')">Hapus</button>
+                </td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+
+        document.getElementById('total-users').innerText = total;
+        document.getElementById('total-premium').innerText = premiumCount;
+    });
+
+    // 2. Fungsi Update dari Tombol Atas
+    function updateUser(limitBaru, status, paket) {
+        const email = document.getElementById('targetEmail').value;
+        if(!email) return alert("Masukkan email!");
+
+        db.ref('users').orderByChild('email').equalTo(email).once('value', snap => {
+            if(!snap.exists()) return alert("User tidak ditemukan!");
+            snap.forEach(child => {
+                db.ref('users/' + child.key).update({
+                    limit: limitBaru,
+                    status: status,
+                    paket: paket
+                });
+                alert("Berhasil mengaktifkan paket untuk " + email);
+            });
+        });
+    }
+
+    // 3. Fungsi Hapus User
+    function hapusUser(key) {
+        if(confirm("Yakin ingin menghapus user ini?")) {
+            db.ref('users/' + key).remove();
+        }
+    }
+</script>
+
+</body>
+</html>
