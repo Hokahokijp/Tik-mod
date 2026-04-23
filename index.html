@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v2.3</title>
+    <title>TikTok Overlay Premium v2.5</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -13,14 +13,31 @@
         .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 280px; text-align: center; }
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 230px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 85vh; }
         .hidden { display: none !important; }
-        .photo-el { position: absolute; background-size: cover; background-position: center; border: 2px solid white; border-radius: 50%; pointer-events: none; transition: opacity 0.5s; }
+        
+        /* Animasi Efek Petir/Glow */
+        @keyframes thunderGlow {
+            0% { box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #007bff; border-color: #fff; }
+            50% { box-shadow: 0 0 20px #fff, 0 0 30px #00d4ff, 0 0 40px #007bff; border-color: #00d4ff; }
+            100% { box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #007bff; border-color: #fff; }
+        }
+
+        .photo-el { 
+            position: absolute; 
+            background-size: cover; 
+            background-position: center; 
+            border: 4px solid white; 
+            border-radius: 50%; 
+            pointer-events: none; 
+            transition: opacity 0.5s;
+            animation: thunderGlow 0.5s infinite alternate;
+        }
         
         input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
         label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #444; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
         .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 6px; border-radius: 5px; }
         .checklist-group { text-align: left; background: #f9f9f9; padding: 8px; border-radius: 5px; margin-top: 5px; border: 1px solid #eee; }
-        .check-item { display: flex; align-items: center; font-size: 12px; margin-bottom: 4px; color: #333; }
+        .check-item { display: flex; align-items: center; font-size: 12px; margin-bottom: 4px; }
         .check-item input { width: auto; margin-right: 8px; margin-top: 0; }
     </style>
 </head>
@@ -34,28 +51,17 @@
             <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
             <p style="font-size:12px">Belum punya akun? <a href="#" onclick="showReg()">Daftar</a></p>
         </div>
-        <div class="box hidden" id="register-form">
-            <h3>Daftar Baru</h3>
-            <input type="text" id="r-tiktok" placeholder="Username TikTok">
-            <input type="email" id="r-email" placeholder="Email">
-            <input type="password" id="r-pass" placeholder="Password">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
-            <p style="font-size:12px"><a href="#" onclick="showLogin()">Balik Login</a></p>
-        </div>
     </div>
 
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:2px solid #ddd;" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
         <h4 style="margin:0 0 10px 0">⚙️ Pengaturan Live</h4>
-        
         <label>Username TikTok Target:</label>
-        <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
-
-        <label style="color:#d63384">Target Gift (Misal: Rose / Doughnut):</label>
-        <input type="text" id="giftTarget" value="Rose" placeholder="Ketik nama Gift">
-
-        <label>Ubah Gift Terpilih Jadi:</label>
+        <input type="text" id="userIn">
+        <label>Target Gift (Misal: Rose):</label>
+        <input type="text" id="giftTarget" value="Rose">
+        <label>Ceklis Untuk Ubah Wujud:</label>
         <div class="checklist-group">
             <div class="check-item"><input type="checkbox" class="m-check" value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</div>
             <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Babi</div>
@@ -64,20 +70,17 @@
             <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang Utan</div>
             <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi Ikan Mas</div>
         </div>
-
-        <label>Ukuran (Pixel) & Durasi (Detik):</label>
+        <label>Ukuran (Pixel) & Waktu:</label>
         <div style="display:flex; gap:5px;">
-            <input type="number" id="sizeIn" value="100">
+            <input type="number" id="sizeIn" value="150">
             <input type="number" id="timeIn" value="10">
         </div>
-
         <div class="switch-box">
             <span>🔊 Suara Google (TTS)</span>
-            <input type="checkbox" id="ttsOn" style="width:20px" checked>
+            <input type="checkbox" id="ttsOn" checked>
         </div>
-
-        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
-        <button onclick="auth.signOut(); location.reload();" style="background:#eee; color:red; font-size:10px;">Logout</button>
+        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN</button>
+        <button onclick="auth.signOut(); location.reload();" style="color:red; font-size:10px;">Logout</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -96,28 +99,9 @@
         const db = firebase.database();
         const socket = io();
 
-        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
-        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
-
-        function register() {
-            const t = document.getElementById('r-tiktok').value;
-            const e = document.getElementById('r-email').value;
-            const p = document.getElementById('r-pass').value;
-            auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: t, status: 'free' });
-            }).catch(err => alert(err.message));
-        }
-
-        function login() {
-            const e = document.getElementById('l-email').value;
-            const p = document.getElementById('l-pass').value;
-            auth.signInWithEmailAndPassword(e, p).catch(() => alert("Gagal Login!"));
-        }
-
         auth.onAuthStateChanged(user => {
             if (user) {
                 db.ref('users/' + user.uid).on('value', snap => {
-                    if (!snap.val()) { auth.signOut(); return; }
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('btnT').classList.remove('hidden');
                     document.getElementById('userIn').value = snap.val().tiktokUser;
@@ -127,7 +111,11 @@
             }
         });
 
-        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
+        function login() {
+            const e = document.getElementById('l-email').value;
+            const p = document.getElementById('l-pass').value;
+            auth.signInWithEmailAndPassword(e, p).catch(() => alert("Gagal Login!"));
+        }
 
         function speak(text) {
             if (!document.getElementById('ttsOn').checked) return;
@@ -137,10 +125,11 @@
             window.speechSynthesis.speak(ut);
         }
 
+        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
+
         function konek() {
             const selectedMorphs = [];
             document.querySelectorAll('.m-check:checked').forEach(c => selectedMorphs.push(c.value));
-            
             const config = {
                 user: document.getElementById('userIn').value,
                 size: document.getElementById('sizeIn').value,
@@ -150,15 +139,14 @@
             };
             socket.emit('setTarget', config);
             toggleMenu();
-            speak("Menghubungkan Target");
+            speak("Menghubungkan ke " + config.user);
         }
 
         socket.on('munculFoto', (data) => {
             const el = document.createElement('div');
             el.className = 'photo-el';
-            
             let imgUrl = data.url;
-            // Cek apakah Gift yang masuk sama dengan Gift Target di pengaturan
+
             if (data.giftName && data.giftName.toLowerCase() === data.config.giftName.toLowerCase()) {
                 if (data.config.morphs && data.config.morphs.length > 0) {
                     const rand = Math.floor(Math.random() * data.config.morphs.length);
@@ -167,25 +155,35 @@
             }
 
             el.style.backgroundImage = `url('${imgUrl}')`;
-            const size = (data.config.size || 100) + 'px';
-            el.style.width = size; el.style.height = size;
+            const size = (data.config.size || 100);
+            el.style.width = size + 'px'; el.style.height = size + 'px';
             document.body.appendChild(el);
 
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
 
-            let x = Math.random() * (window.innerWidth - parseInt(data.config.size || 100));
-            let y = Math.random() * (window.innerHeight - parseInt(data.config.size || 100));
-            el.style.transform = `translate(${x}px, ${y}px)`;
+            // Logika Melayang Bebas (Bounce)
+            let posX = Math.random() * (window.innerWidth - size);
+            let posY = Math.random() * (window.innerHeight - size);
+            let velX = (Math.random() - 0.5) * 10;
+            let velY = (Math.random() - 0.5) * 10;
 
-            setTimeout(() => { 
-                el.style.opacity = '0';
-                setTimeout(() => el.remove(), 500);
-            }, (data.config.time || 10) * 1000);
+            function move() {
+                posX += velX; posY += velY;
+                if (posX <= 0 || posX >= window.innerWidth - size) velX *= -1;
+                if (posY <= 0 || posY >= window.innerHeight - size) velY *= -1;
+                el.style.left = posX + 'px';
+                el.style.top = posY + 'px';
+                if (el.parentNode) requestAnimationFrame(move);
+            }
+            requestAnimationFrame(move);
+
+            setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 500); }, data.config.time * 1000);
         });
 
         socket.on('chat', (data) => {
-            speak(`${data.nickname} bilang: ${data.comment}`);
+            speak(`${data.nickname} bilang ${data.comment}`);
         });
+        function showReg() { alert("Gunakan akun terdaftar!"); }
     </script>
 </body>
 </html>
