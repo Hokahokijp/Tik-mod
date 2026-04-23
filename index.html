@@ -3,93 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v3.5 - Aa</title>
+    <title>TikTok Overlay Premium v4.0 - Aa</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: sans-serif; transition: background 0.5s; background-size: cover; background-position: center; }
-        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
-        .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 280px; text-align: center; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 240px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 85vh; }
+        body { margin: 0; background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: 0.5s; }
+        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: flex; align-items: center; justify-content: center; }
+        .box { background: white; padding: 25px; border-radius: 20px; width: 300px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #menu { position: fixed; top: 15px; left: 15px; z-index: 100; background: white; padding: 20px; border-radius: 15px; width: 250px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); overflow-y: auto; max-height: 85vh; border: 1px solid #ddd; }
         .hidden { display: none !important; }
-        
-        /* Animasi Koin Besar (RGB Petir) */
-        @keyframes sultan-glow {
-            0% { box-shadow: 0 0 10px #ff0000; border-color: #ff0000; transform: scale(1); }
-            33% { box-shadow: 0 0 30px #00ff00; border-color: #00ff00; transform: scale(1.1); }
-            66% { box-shadow: 0 0 50px #0000ff; border-color: #0000ff; transform: scale(1.05); }
-            100% { box-shadow: 0 0 10px #ff0000; border-color: #ff0000; transform: scale(1); }
-        }
 
-        /* Animasi Like (Tep-tep) */
-        @keyframes jump {
-            0%, 100% { margin-top: 0; }
-            50% { margin-top: -20px; }
-        }
+        /* KEYFRAMES ANIMASI */
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 77, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); } }
+        @keyframes spin-gold { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rgb-sultan { 0% { border-color: red; box-shadow: 0 0 20px red; } 33% { border-color: lime; box-shadow: 0 0 40px lime; } 66% { border-color: blue; box-shadow: 0 0 20px blue; } 100% { border-color: red; box-shadow: 0 0 20px red; } }
+        @keyframes tap-effect { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
         .photo-el { 
             position: absolute; 
             background-size: cover; 
             background-position: center; 
             border-radius: 50%; 
-            border: 3px solid #fff;
+            border: 3px solid white; 
             pointer-events: none; 
-            transition: opacity 0.5s, width 0.3s, height 0.3s;
+            transition: opacity 0.5s, width 0.3s, height 0.3s, border-color 0.3s;
+            box-shadow: 0 0 10px rgba(255,255,255,0.3);
         }
 
-        input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        label { font-size: 11px; font-weight: bold; margin-top: 10px; display: block; color: #444; }
-        button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
+        input, select { width: 100%; padding: 10px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; outline: none; }
+        label { font-size: 12px; font-weight: bold; margin-top: 12px; display: block; color: #666; text-align: left; }
+        button { cursor: pointer; border-radius: 8px; border: none; padding: 12px; font-weight: bold; width: 100%; margin-top: 15px; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
     </style>
 </head>
 <body id="bg-body">
 
     <div id="auth-container">
         <div class="box" id="login-form">
-            <h3>Masuk Akun</h3>
+            <h2 style="margin-top:0">Masuk</h2>
             <input type="email" id="l-email" placeholder="Email">
             <input type="password" id="l-pass" placeholder="Password">
             <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
-            <p style="font-size:12px">Baru di sini? <a href="#" onclick="toggleAuth(true)">Daftar Akun</a></p>
+            <p style="font-size:12px; margin-top:15px">Baru? <a href="#" onclick="toggleAuth(true)">Daftar Akun</a></p>
         </div>
         <div class="box hidden" id="register-form">
-            <h3>Daftar Member</h3>
+            <h2 style="margin-top:0">Daftar</h2>
             <input type="text" id="r-tiktok" placeholder="Username TikTok">
             <input type="email" id="r-email" placeholder="Email">
             <input type="password" id="r-pass" placeholder="Password">
             <button onclick="register()" style="background:#28a745; color:white;">DAFTAR SEKARANG</button>
-            <p style="font-size:12px"><a href="#" onclick="toggleAuth(false)">Kembali Login</a></p>
+            <p style="font-size:12px; margin-top:15px"><a href="#" onclick="toggleAuth(false)">Kembali Login</a></p>
         </div>
     </div>
 
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:15px; left:15px; z-index:101; width:50px; height:50px; border-radius:50%; background:white; font-size:24px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
-        <h4>⚙️ Pengaturan Overlay</h4>
+        <h3 style="margin-top:0">Pengaturan Live</h3>
         
-        <label>Ganti Latar Belakang (10 Tema):</label>
+        <label>Pilih Tema Latar:</label>
         <select id="bgSelect" onchange="changeBG(this.value)">
-            <option value="#000">Hitam Polos</option>
-            <option value="url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1000')">Galaxy Space</option>
-            <option value="url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1000')">Abstract Dark</option>
-            <option value="url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=1000')">Neon Cyber</option>
-            <option value="url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1000')">Mountain Blue</option>
-            <option value="url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1000')">Tropical Beach</option>
-            <option value="url('https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1000')">Starry Night</option>
-            <option value="url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1000')">Nature Forest</option>
-            <option value="url('https://images.unsplash.com/photo-1502691876148-a84978f5d88b?w=1000')">Purple Lava</option>
-            <option value="url('https://images.unsplash.com/photo-1533134486753-c833f0ed4866?w=1000')">Deep Ocean</option>
+            <option value="#000">Hitam (Standar)</option>
+            <option value="url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), #111">Carbon Dark</option>
+            <option value="linear-gradient(45deg, #0f0c29, #302b63, #24243e)">Deep Purple</option>
+            <option value="url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=800')">Galaxy</option>
+            <option value="url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?w=800')">Neon Cyber</option>
+            <option value="url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800')">Abstract Dark</option>
+            <option value="url('https://images.unsplash.com/photo-1502691876148-a84978f5d88b?w=800')">Purple Lava</option>
+            <option value="url('https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800')">Starry Night</option>
+            <option value="url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800')">Nature</option>
+            <option value="url('https://images.unsplash.com/photo-1533134486753-c833f0ed4866?w=800')">Deep Ocean</option>
         </select>
 
         <label>Username TikTok Aa:</label>
         <input type="text" id="userIn">
 
-        <label>Ukuran Dasar Foto:</label>
-        <input type="range" id="sizeIn" min="40" max="150" value="80">
+        <label>Ukuran Dasar:</label>
+        <input type="range" id="sizeIn" min="40" max="120" value="70">
 
-        <button onclick="konek()" style="background:#28a745; color:white;">TERAPKAN & MULAI</button>
-        <button onclick="auth.signOut(); location.reload();" style="font-size:10px; background:none; color:red;">Logout Akun</button>
+        <button onclick="konek()" style="background:#007bff; color:white;">MULAI SEKARANG</button>
+        <button onclick="auth.signOut(); location.reload();" style="font-size:11px; background:none; color:red; margin-top:10px;">Keluar Akun</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -108,20 +102,19 @@
         const db = firebase.database();
         const socket = io();
 
-        let usersInLive = {}; // Simpan data user yang aktif
+        let usersOnScreen = {};
 
-        // --- BACKGROUND & UI ---
-        function changeBG(val) { document.getElementById('bg-body').style.background = val; document.getElementById('bg-body').style.backgroundSize = "cover"; }
+        function changeBG(v) { document.getElementById('bg-body').style.background = v; document.getElementById('bg-body').style.backgroundSize = "cover"; }
         function toggleAuth(s) { document.getElementById('login-form').classList.toggle('hidden', s); document.getElementById('register-form').classList.toggle('hidden', !s); }
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
 
         function register() {
             const t = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
             auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ tiktokUser: t, email: e, status: 'free' });
+                db.ref('users/' + u.user.uid).set({ tiktokUser: t, email: e });
             }).catch(a => alert(a.message));
         }
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(a => alert("Gagal!")); }
+        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Gagal!")); }
         
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -133,104 +126,73 @@
             }
         });
 
-        // --- LOGIKA ANIMASI PREMIUM ---
         function createPhoto(data) {
             const id = data.userId;
-            if (usersInLive[id]) return; // Cegah duplikat foto
+            if (usersOnScreen[id]) usersOnScreen[id].remove();
 
             const el = document.createElement('div');
             el.className = 'photo-el';
-            el.id = "user-" + id;
+            el.id = "u-" + id;
             
-            let size = parseInt(document.getElementById('sizeIn').value);
-            let border = "white";
-            let anim = "";
+            let baseSize = parseInt(document.getElementById('sizeIn').value);
+            let coin = data.coins || 0;
 
-            // LOGIKA GIFT SESUAI COIN
-            if (data.coins >= 30) { // Gift Besar (Sultan)
-                size *= 2.5;
-                border = "gold";
-                el.style.animation = "sultan-glow 1s infinite linear";
-            } else if (data.coins >= 5) { // Gift Menengah
-                size *= 1.5;
-                border = "#00f6ff";
-                el.style.boxShadow = "0 0 25px #00f6ff";
-            } else if (data.coins >= 1) { // 1 Mawar / 1 Coin
-                size += 20;
-                border = "#ff4d4d";
-                el.style.boxShadow = "0 0 15px #ff4d4d";
+            // LOGIKA ANIMASI BERDASARKAN KOIN
+            if (coin >= 100) { // SULTAN RAKSASA
+                el.style.width = (baseSize * 3) + 'px';
+                el.style.height = (baseSize * 3) + 'px';
+                el.style.animation = "rgb-sultan 2s infinite linear";
+                el.style.borderWidth = "6px";
+            } else if (coin >= 30) { // GOLD SPIN
+                el.style.width = (baseSize * 2) + 'px';
+                el.style.height = (baseSize * 2) + 'px';
+                el.style.borderColor = "gold";
+                el.style.boxShadow = "0 0 20px gold";
+                el.style.animation = "spin-gold 4s infinite linear";
+            } else if (coin >= 1) { // PULSE RED (MAWAR)
+                el.style.width = (baseSize + 20) + 'px';
+                el.style.height = (baseSize + 20) + 'px';
+                el.style.borderColor = "#ff4d4d";
+                el.style.animation = "pulse-red 2s infinite";
+            } else { // NONTON BIASA
+                el.style.width = baseSize + 'px';
+                el.style.height = baseSize + 'px';
             }
 
             el.style.backgroundImage = `url('${data.url}')`;
-            el.style.width = size + 'px';
-            el.style.height = size + 'px';
-            el.style.borderColor = border;
             document.body.appendChild(el);
-            usersInLive[id] = el;
+            usersOnScreen[id] = el;
 
-            // Bounce Movement
-            let px = Math.random() * (window.innerWidth - size), py = Math.random() * (window.innerHeight - size);
-            let vx = (Math.random() - 0.5) * 8, vy = (Math.random() - 0.5) * 8;
+            // Gerakan
+            let px = Math.random() * (window.innerWidth - 100), py = Math.random() * (window.innerHeight - 100);
+            let vx = (Math.random() - 0.5) * 6, vy = (Math.random() - 0.5) * 6;
             
             function move() {
-                if (!usersInLive[id]) return;
+                if (!usersOnScreen[id]) return;
                 px += vx; py += vy;
-                if (px <= 0 || px >= window.innerWidth - size) vx *= -1;
-                if (py <= 0 || py >= window.innerHeight - size) vy *= -1;
+                if (px <= 0 || px >= window.innerWidth - el.offsetWidth) vx *= -1;
+                if (py <= 0 || py >= window.innerHeight - el.offsetHeight) vy *= -1;
                 el.style.left = px + 'px'; el.style.top = py + 'px';
                 requestAnimationFrame(move);
             }
             move();
         }
 
-        // --- SOCKET EVENTS ---
-        socket.on('memberJoin', (data) => {
-            createPhoto(data); // Nonton biasa (tanpa efek)
-        });
-
-        socket.on('gift', (data) => {
-            const el = document.getElementById("user-" + data.userId);
-            if (el) el.remove(); // Hapus yang lama agar animasi gift baru muncul
-            delete usersInLive[data.userId];
-            createPhoto(data); // Buat ulang dengan animasi koin
-        });
-
+        // EVENT HANDLERS
+        socket.on('memberJoin', (data) => createPhoto(data));
+        socket.on('gift', (data) => createPhoto(data));
         socket.on('like', (data) => {
-            const el = document.getElementById("user-" + data.userId);
-            if (el) {
-                el.style.animation = "jump 0.5s ease"; // Efek Tep-tep melompat
-                setTimeout(() => { 
-                    // Kembalikan ke animasi sultan jika dia sultan
-                    if (data.isSultan) el.style.animation = "sultan-glow 1s infinite linear";
-                    else el.style.animation = "none"; 
-                }, 500);
-            }
+            const el = document.getElementById("u-" + data.userId);
+            if (el) { el.style.animation = "tap-effect 0.3s ease"; setTimeout(() => el.style.animation = "", 300); }
         });
-
         socket.on('chat', (data) => {
-            const el = document.getElementById("user-" + data.userId);
-            if (el) {
-                el.style.borderWidth = "6px"; // Efek komen: Border menebal sebentar
-                setTimeout(() => el.style.borderWidth = "3px", 1000);
-            }
+            const el = document.getElementById("u-" + data.userId);
+            if (el) { el.style.boxShadow = "0 0 30px white"; setTimeout(() => el.style.boxShadow = "", 1000); }
         });
-
-        socket.on('share', (data) => {
-            const el = document.getElementById("user-" + data.userId);
-            if (el) {
-                el.style.boxShadow = "0 0 50px white"; // Efek share: Cahaya putih terang
-                setTimeout(() => el.style.boxShadow = "0 0 15px rgba(255,255,255,0.5)", 2000);
-            }
-        });
-
-        socket.on('memberLeave', (data) => {
-            const el = document.getElementById("user-" + data.userId);
-            if (el) { el.remove(); delete usersInLive[data.userId]; }
-        });
+        socket.on('memberLeave', (data) => { if(usersOnScreen[data.userId]) { usersOnScreen[data.userId].remove(); delete usersOnScreen[data.userId]; } });
 
         function konek() {
-            const conf = { user: document.getElementById('userIn').value };
-            socket.emit('setTarget', conf);
+            socket.emit('setTarget', { user: document.getElementById('userIn').value });
             toggleMenu();
         }
     </script>
