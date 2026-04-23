@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v2.7</title>
+    <title>TikTok Overlay PRO v2.8</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -14,31 +14,25 @@
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 240px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 85vh; }
         .hidden { display: none !important; }
         
-        @keyframes petirAnim {
-            0% { box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #ff00de; border-color: #fff; }
-            33% { box-shadow: 0 0 15px #00f6ff, 0 0 25px #00f6ff, 0 0 40px #00f6ff; border-color: #00f6ff; }
-            66% { box-shadow: 0 0 10px #ffff00, 0 0 30px #ffff00, 0 0 50px #ffff00; border-color: #ffff00; }
-            100% { box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #ff00de; border-color: #fff; }
+        @keyframes petir {
+            0% { box-shadow: 0 0 10px #fff, 0 0 20px #00d4ff; border: 3px solid #fff; }
+            50% { box-shadow: 0 0 25px #00d4ff, 0 0 40px #007bff; border: 3px solid #00d4ff; }
+            100% { box-shadow: 0 0 10px #fff, 0 0 20px #00d4ff; border: 3px solid #fff; }
         }
 
         .photo-el { 
             position: absolute; 
             background-size: cover; 
             background-position: center; 
-            border: 4px solid white; 
             border-radius: 50%; 
             pointer-events: none; 
-            transition: opacity 0.5s;
-            animation: petirAnim 0.3s infinite;
+            animation: petir 0.4s infinite alternate;
         }
         
-        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
-        label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #444; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 6px; border-radius: 5px; }
-        .checklist-group { text-align: left; background: #f9f9f9; padding: 8px; border-radius: 5px; margin-top: 5px; border: 1px solid #eee; }
-        .check-item { display: flex; align-items: center; font-size: 11px; margin-bottom: 4px; }
-        .check-item input { width: auto; margin-right: 8px; margin-top: 0; }
+        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 8px; border-radius: 5px; }
+        .checklist-group { text-align: left; background: #f9f9f9; padding: 8px; border-radius: 5px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -49,20 +43,19 @@
             <input type="email" id="l-email" placeholder="Email">
             <input type="password" id="l-pass" placeholder="Password">
             <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
-            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="toggleAuth(true)">Daftar Disini</a></p>
+            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="toggleAuth(true)">Daftar</a></p>
         </div>
-
         <div class="box hidden" id="register-form">
-            <h3>Daftar Baru</h3>
+            <h3>Daftar Akun</h3>
             <input type="text" id="r-tiktok" placeholder="Username TikTok">
             <input type="email" id="r-email" placeholder="Email Baru">
             <input type="password" id="r-pass" placeholder="Password Baru">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR SEKARANG</button>
+            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
             <p style="font-size:12px"><a href="#" onclick="toggleAuth(false)">Kembali Login</a></p>
         </div>
     </div>
 
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:2px solid #ddd;" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
         <h4 style="margin:0">⚙️ Pengaturan</h4>
@@ -70,26 +63,23 @@
         <input type="text" id="userIn">
         <label>Target Gift:</label>
         <input type="text" id="giftTarget" value="Rose">
-        <label>Ubah Jadi (Ceklis Semua):</label>
+        <label>Ubah Wujud (Ceklis):</label>
         <div class="checklist-group">
-            <div class="check-item"><input type="checkbox" class="m-check" value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> 🐸 Kodok</div>
-            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> 🐷 Babi</div>
-            <div class="check-item"><input type="checkbox" class="m-check" value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> 🐱 Kucing</div>
-            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> 🦎 Ciktak</div>
-            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> 🦍 Orang Utan</div>
-            <div class="check-item"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> 🐟 Ikan Mas</div>
+            <label style="font-weight:normal"><input type="checkbox" class="m-check" value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> 🐸 Kodok</label>
+            <label style="font-weight:normal"><input type="checkbox" class="m-check" value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> 🐷 Babi</label>
+            <label style="font-weight:normal"><input type="checkbox" class="m-check" value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> 🐱 Kucing</label>
         </div>
         <label>Ukuran & Detik:</label>
         <div style="display:flex; gap:5px;">
-            <input type="number" id="sizeIn" value="150">
-            <input type="number" id="timeIn" value="10">
+            <input type="number" id="sizeIn" value="120">
+            <input type="number" id="timeIn" value="8">
         </div>
         <div class="switch-box">
-            <span>🔊 Suara Komen & Gift</span>
+            <span>🔊 Suara Komentar</span>
             <input type="checkbox" id="ttsOn" checked>
         </div>
-        <button onclick="konek()" style="background:#28a745; color:white;">TERAPKAN</button>
-        <button onclick="auth.signOut(); location.reload();" style="color:red; font-size:10px; background:none;">LOGOUT</button>
+        <button onclick="konek()" style="background:#28a745; color:white;">MULAI LIVE</button>
+        <button onclick="auth.signOut(); location.reload();" style="color:red; background:none; font-size:10px;">LOGOUT</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -108,27 +98,22 @@
         const db = firebase.database();
         const socket = io();
 
-        function toggleAuth(showReg) {
-            document.getElementById('login-form').classList.toggle('hidden', showReg);
-            document.getElementById('register-form').classList.toggle('hidden', !showReg);
+        function toggleAuth(s) {
+            document.getElementById('login-form').classList.toggle('hidden', s);
+            document.getElementById('register-form').classList.toggle('hidden', !s);
         }
 
         function register() {
-            const t = document.getElementById('r-tiktok').value;
-            const e = document.getElementById('r-email').value;
-            const p = document.getElementById('r-pass').value;
-            if(!t || !e || !p) return alert("Isi semua data!");
-            auth.createUserWithEmailAndPassword(e, p).then(res => {
-                db.ref('users/' + res.user.uid).set({ email: e, tiktokUser: t, status: 'free' });
-                alert("Daftar Berhasil! Silakan Login.");
-                toggleAuth(false);
-            }).catch(err => alert(err.message));
+            const t = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
+            auth.createUserWithEmailAndPassword(e, p).then(u => {
+                db.ref('users/' + u.user.uid).set({ tiktokUser: t, email: e, status: 'free' });
+                alert("Berhasil! Silakan Login."); toggleAuth(false);
+            }).catch(a => alert(a.message));
         }
 
         function login() {
-            const e = document.getElementById('l-email').value;
-            const p = document.getElementById('l-pass').value;
-            auth.signInWithEmailAndPassword(e, p).catch(err => alert("Gagal: " + err.message));
+            const e = document.getElementById('l-email').value, p = document.getElementById('l-pass').value;
+            auth.signInWithEmailAndPassword(e, p).catch(a => alert("Gagal!"));
         }
 
         auth.onAuthStateChanged(user => {
@@ -143,12 +128,15 @@
             }
         });
 
-        function speak(text) {
+        // --- FUNGSI SUARA GOOGLE ---
+        function speak(msg) {
             if (!document.getElementById('ttsOn').checked) return;
-            window.speechSynthesis.cancel();
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = 'id-ID';
-            window.speechSynthesis.speak(ut);
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            const talk = new SpeechSynthesisUtterance(msg);
+            talk.lang = 'id-ID';
+            talk.rate = 1.1;
+            synth.speak(talk);
         }
 
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
@@ -165,24 +153,29 @@
             };
             socket.emit('setTarget', config);
             toggleMenu();
-            speak("Sistem aktif untuk " + config.user);
+            speak("Menghubungkan. Suara komentar aktif.");
         }
 
-        socket.on('munculFoto', (data) => {
+        // --- LOGIKA MUNCUL FOTO (GIFT, TAP-TAP, DLL) ---
+        function createPhoto(url, nickname, isGift, giftName, config) {
             const el = document.createElement('div');
             el.className = 'photo-el';
-            let img = data.url;
-            if (data.giftName && data.giftName.toLowerCase() === data.config.giftName.toLowerCase()) {
-                if (data.config.morphs.length > 0) img = data.config.morphs[Math.floor(Math.random() * data.config.morphs.length)];
+            
+            let img = url;
+            // Jika Gift target, ubah wujud
+            if (isGift && giftName.toLowerCase() === config.giftName.toLowerCase()) {
+                if (config.morphs.length > 0) img = config.morphs[Math.floor(Math.random() * config.morphs.length)];
             }
+            
             el.style.backgroundImage = `url('${img}')`;
-            const s = parseInt(data.config.size);
+            const s = parseInt(config.size);
             el.style.width = s + 'px'; el.style.height = s + 'px';
             document.body.appendChild(el);
-            if (data.giftName) speak(data.nickname + " kasih " + data.giftName);
 
+            // Pergerakan Memantul
             let px = Math.random() * (window.innerWidth - s), py = Math.random() * (window.innerHeight - s);
-            let vx = (Math.random() - 0.5) * 10, vy = (Math.random() - 0.5) * 10;
+            let vx = (Math.random() - 0.5) * 12, vy = (Math.random() - 0.5) * 12;
+            
             function move() {
                 px += vx; py += vy;
                 if (px <= 0 || px >= window.innerWidth - s) vx *= -1;
@@ -191,11 +184,24 @@
                 if (el.parentNode) requestAnimationFrame(move);
             }
             move();
-            setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 500); }, data.config.time * 1000);
+            setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 500); }, config.time * 1000);
+        }
+
+        socket.on('munculFoto', (data) => {
+            createPhoto(data.url, data.nickname, !!data.giftName, data.giftName || "", data.config);
+            if (data.giftName) speak(data.nickname + " kasih " + data.giftName);
         });
 
+        // --- BACA KOMENTAR ---
         socket.on('chat', (data) => {
-            if(data.comment) speak(data.nickname + " berkata " + data.comment);
+            if(data.comment) {
+                speak(data.nickname + " bilang " + data.comment);
+            }
+        });
+
+        // --- TAP-TAP (LIKE) ---
+        socket.on('like', (data) => {
+            createPhoto(data.url, data.nickname, false, "", data.config);
         });
     </script>
 </body>
