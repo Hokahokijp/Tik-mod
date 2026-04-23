@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Live Reader PRO</title>
+    <title>TikTok Live Fix - Aa</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -14,25 +14,18 @@
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 240px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 85vh; }
         .hidden { display: none !important; }
         
-        /* Animasi Glow Petir */
-        @keyframes petirAnim {
-            0% { box-shadow: 0 0 10px #fff, 0 0 20px #00f6ff; border: 3px solid #fff; }
-            50% { box-shadow: 0 0 20px #00f6ff, 0 0 40px #007bff; border: 3px solid #00f6ff; }
-            100% { box-shadow: 0 0 10px #fff, 0 0 20px #00f6ff; border: 3px solid #fff; }
-        }
-
         .photo-el { 
             position: absolute; 
             background-size: cover; 
             background-position: center; 
             border-radius: 50%; 
+            border: 3px solid #fff;
+            box-shadow: 0 0 15px #00f6ff;
             pointer-events: none; 
-            animation: petirAnim 0.4s infinite alternate;
         }
         
-        input { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
-        button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; transition: 0.2s; }
-        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 8px; border-radius: 5px; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -43,51 +36,36 @@
             <input type="email" id="l-email" placeholder="Email">
             <input type="password" id="l-pass" placeholder="Password">
             <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
-            <p style="font-size:12px">Belum ada akun? <a href="#" onclick="toggleAuth(true)">Daftar</a></p>
+            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="toggleAuth(true)">Daftar Akun</a></p>
         </div>
         <div class="box hidden" id="register-form">
             <h3>Daftar Baru</h3>
             <input type="text" id="r-tiktok" placeholder="Username TikTok">
             <input type="email" id="r-email" placeholder="Email Baru">
             <input type="password" id="r-pass" placeholder="Password Baru">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
+            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR SEKARANG</button>
             <p style="font-size:12px"><a href="#" onclick="toggleAuth(false)">Kembali Login</a></p>
         </div>
     </div>
 
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none; box-shadow:0 0 10px rgba(0,0,0,0.2);" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
-        <h4 style="margin:0 0 10px 0">⚙️ Live Control</h4>
+        <h4>⚙️ Pengaturan Live</h4>
         <label style="font-size:11px">Username TikTok Aa:</label>
-        <input type="text" id="userIn" placeholder="@username">
-        
-        <label style="font-size:11px; margin-top:10px; display:block;">Target Gift (Wujud Kodok):</label>
+        <input type="text" id="userIn">
+        <label style="font-size:11px">Target Gift:</label>
         <input type="text" id="giftTarget" value="Rose">
-        
         <div style="display:flex; gap:5px; margin-top:10px;">
-            <div>
-                <label style="font-size:10px">Ukuran</label>
-                <input type="number" id="sizeIn" value="120">
-            </div>
-            <div>
-                <label style="font-size:10px">Lama (Detik)</label>
-                <input type="number" id="timeIn" value="10">
-            </div>
+            <input type="number" id="sizeIn" value="120" placeholder="Size">
+            <input type="number" id="timeIn" value="15" placeholder="Detik">
         </div>
-
-        <div class="switch-box">
-            <span>🔊 Bacakan Komentar</span>
-            <input type="checkbox" id="ttsOn" checked>
-        </div>
-
-        <button onclick="konek()" style="background:#28a745; color:white;">HUBUNGKAN LIVE</button>
-        <button onclick="auth.signOut(); location.reload();" style="color:red; background:none; font-size:10px;">Logout</button>
+        <button onclick="konek()" style="background:#28a745; color:white;">MULAI BACA KOMENTAR</button>
+        <button onclick="auth.signOut(); location.reload();" style="color:red; background:none; font-size:10px;">Keluar/Logout</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Konfigurasi Firebase Aa
         const firebaseConfig = {
             apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
             authDomain: "sos-pro-cd66d.firebaseapp.com",
@@ -102,7 +80,7 @@
         const db = firebase.database();
         const socket = io();
 
-        // --- AUTH SYSTEM ---
+        // --- AUTH & DAFTAR (NURUT: BISA DAFTAR SEPUASNYA) ---
         function toggleAuth(s) { document.getElementById('login-form').classList.toggle('hidden', s); document.getElementById('register-form').classList.toggle('hidden', !s); }
         function register() {
             const t = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
@@ -111,7 +89,7 @@
                 alert("Berhasil Daftar!"); toggleAuth(false);
             }).catch(a => alert(a.message));
         }
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(a => alert("Login Gagal!")); }
+        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(a => alert("Gagal!")); }
         
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -123,94 +101,78 @@
             } else { document.getElementById('auth-container').classList.remove('hidden'); }
         });
 
-        // --- SISTEM SUARA (ANTREAN TIKFINITY STYLE) ---
+        // --- SISTEM SUARA (NURUT: WAJIB BACA KOMENTAR TANPA MACET) ---
         let speechQueue = [];
         let isSpeaking = false;
-
-        function speak(msg) {
-            if (!document.getElementById('ttsOn').checked) return;
-            speechQueue.push(msg);
-            if (!isSpeaking) processQueue();
+        function speak(text) {
+            speechQueue.push(text);
+            if (!isSpeaking) nextSpeech();
         }
-
-        function processQueue() {
+        function nextSpeech() {
             if (speechQueue.length === 0) { isSpeaking = false; return; }
             isSpeaking = true;
-            const synth = window.speechSynthesis;
             const ut = new SpeechSynthesisUtterance(speechQueue.shift());
             ut.lang = 'id-ID';
-            ut.rate = 1.0;
-            ut.onend = () => { processQueue(); };
-            synth.speak(ut);
+            ut.onend = () => { nextSpeech(); };
+            window.speechSynthesis.speak(ut);
         }
 
-        // --- SISTEM FOTO PROFIL ---
-        let activeUsers = {};
+        // --- SISTEM PROFIL (NURUT: DATANG MUNCUL, PERGI HILANG) ---
+        let usersOnScreen = {};
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
 
-        function drawProfile(id, url, config) {
-            if (document.getElementById('user-' + id)) return;
+        function spawnProfile(id, url, config) {
+            if (usersOnScreen[id]) return;
             const el = document.createElement('div');
             el.className = 'photo-el';
-            el.id = 'user-' + id;
             el.style.backgroundImage = `url('${url}')`;
-            const s = parseInt(config.size || 120);
-            el.style.width = s + 'px'; el.style.height = s + 'px';
+            const s = parseInt(config.size);
+            el.style.width = s+'px'; el.style.height = s+'px';
             document.body.appendChild(el);
+            usersOnScreen[id] = el;
 
             let px = Math.random() * (window.innerWidth - s), py = Math.random() * (window.innerHeight - s);
-            let vx = (Math.random() - 0.5) * 8, vy = (Math.random() - 0.5) * 8;
-
-            function bounce() {
+            let vx = (Math.random() - 0.5) * 6, vy = (Math.random() - 0.5) * 6;
+            function move() {
+                if (!usersOnScreen[id]) return;
                 px += vx; py += vy;
                 if (px <= 0 || px >= window.innerWidth - s) vx *= -1;
                 if (py <= 0 || py >= window.innerHeight - s) vy *= -1;
                 el.style.left = px + 'px'; el.style.top = py + 'px';
-                if (document.getElementById(el.id)) requestAnimationFrame(bounce);
+                requestAnimationFrame(move);
             }
-            bounce();
+            move();
+        }
+
+        function removeProfile(id) {
+            if (usersOnScreen[id]) {
+                usersOnScreen[id].remove();
+                delete usersOnScreen[id];
+            }
         }
 
         function konek() {
-            const config = {
-                user: document.getElementById('userIn').value,
-                size: document.getElementById('sizeIn').value,
-                time: document.getElementById('timeIn').value,
-                giftName: document.getElementById('giftTarget').value
-            };
-            socket.emit('setTarget', config);
+            const conf = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value };
+            socket.emit('setTarget', conf);
             toggleMenu();
-            speak("Sistem dihubungkan ke live " + config.user);
+            speak("Sistem diaktifkan, siap membaca komentar.");
         }
 
-        // --- LISTENER LIVE REAL-TIME ---
-        // Membaca Komentar Langsung
+        // --- EVENT TIKTOK REALTIME ---
         socket.on('chat', (data) => {
-            if(data.comment) {
-                // Contoh: "Aa bilang Halo"
-                speak(data.nickname + " bilang " + data.comment);
-            }
+            if(data.comment) speak(data.nickname + " bilang " + data.comment);
         });
 
-        // Orang Masuk (Muncul Profil)
         socket.on('memberJoin', (data) => {
-            drawProfile(data.userId, data.url, data.config);
+            spawnProfile(data.userId, data.url, data.config);
         });
 
-        // Orang Keluar (Hapus Profil)
         socket.on('memberLeave', (data) => {
-            const el = document.getElementById('user-' + data.userId);
-            if(el) el.remove();
+            removeProfile(data.userId);
         });
 
-        // Hadiah/Gift
         socket.on('gift', (data) => {
-            speak(data.nickname + " mengirim " + data.giftName);
-            // Logika ubah wujud kodok jika sesuai target
-            if(data.giftName.toLowerCase() === data.config.giftName.toLowerCase()) {
-                const el = document.getElementById('user-' + data.userId);
-                if(el) el.style.backgroundImage = "url('https://cdn-icons-png.flaticon.com/512/3571/3571612.png')";
-            }
+            speak(data.nickname + " kirim " + data.giftName);
         });
     </script>
 </body>
