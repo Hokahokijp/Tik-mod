@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Live War Mode v3.0</title>
+    <title>TikTok Overlay Animasi Gift v2.2</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -14,11 +14,7 @@
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
         .hidden { display: none !important; }
         
-        /* Widget Target Koin */
-        #coin-target-box { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 10px; width: 150px; text-align: center; border: 2px solid #ffd700; }
-        #progress-bar { width: 100%; background: #ccc; height: 10px; border-radius: 5px; margin-top: 5px; overflow: hidden; }
-        #progress-fill { width: 0%; height: 100%; background: linear-gradient(to right, #ff4d4d, #ffd700); transition: 0.3s; }
-
+        /* Animasi Melayang Bebas */
         .photo-el { 
             position: absolute; 
             background-size: cover; 
@@ -26,20 +22,18 @@
             border: 3px solid white; 
             border-radius: 50%; 
             pointer-events: none; 
-            transition: opacity 0.5s, transform 0.2s;
+            transition: opacity 0.5s;
             box-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
 
+        /* Animasi Goyang untuk Gift Besar */
         @keyframes shake {
-            0% { transform: scale(1.1) rotate(0deg); }
-            50% { transform: scale(1.1) rotate(3deg); }
-            100% { transform: scale(1.1) rotate(-3deg); }
-        }
-
-        @keyframes lightning {
-            0% { border-color: #fff; box-shadow: 0 0 5px #fff; }
-            50% { border-color: #00f6ff; box-shadow: 0 0 30px #00f6ff; }
-            100% { border-color: #fff; box-shadow: 0 0 5px #fff; }
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(-1deg); }
+            40% { transform: translate(3px, 2px) rotate(1deg); }
+            60% { transform: translate(-1px, -1px) rotate(1deg); }
+            80% { transform: translate(-3px, 1px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
 
         input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
@@ -57,12 +51,13 @@
             <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
             <p style="font-size:12px">Belum punya akun? <a href="#" onclick="showReg()">Daftar</a></p>
         </div>
+
         <div class="box hidden" id="register-form">
             <h3>Daftar Baru</h3>
             <input type="text" id="r-tiktok" placeholder="Username TikTok">
             <input type="email" id="r-email" placeholder="Email">
             <input type="password" id="r-pass" placeholder="Password">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
+            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR SEKARANG</button>
             <p style="font-size:12px"><a href="#" onclick="showLogin()">Balik Login</a></p>
         </div>
     </div>
@@ -70,24 +65,26 @@
     <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
-        <h4>⚙️ Pengaturan Live</h4>
-        <label>Username TikTok:</label>
+        <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
+        <label>TikTok Target:</label>
         <input type="text" id="userIn">
-        <label>Ubah Wujud (Rose):</label>
+
+        <label>Ubah Wujud (Gift Rose):</label>
         <select id="morphRose">
             <option value="none">Asli</option>
             <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png">Kodok</option>
             <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png">Babi</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png">Kucing</option>
         </select>
-        <label>Target Koin Room:</label>
-        <input type="number" id="targetKoin" value="500">
-        <button onclick="konek()" style="background:#007bff; color:white;">AKTIFKAN WAR MODE</button>
-    </div>
 
-    <div id="coin-target-box">
-        <div style="font-size:10px; font-weight:bold; color:black;">TARGET MELEDAK</div>
-        <div id="coin-count" style="font-size:14px; font-weight:bold; color:#ff4d4d;">0 / 500</div>
-        <div id="progress-bar"><div id="progress-fill"></div></div>
+        <label>Ukuran Dasar:</label>
+        <input type="range" id="sizeIn" min="40" max="150" value="80">
+        
+        <label>Lama Tampil (Detik):</label>
+        <input type="number" id="timeIn" value="15">
+
+        <button onclick="konek()" style="background:#007bff; color:white;">MULAI LIVE</button>
+        <button onclick="auth.signOut(); location.reload();" style="background:#dc3545; color:white; font-size:10px; margin-top:20px;">Logout</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -106,15 +103,16 @@
         const db = firebase.database();
         const socket = io();
 
-        let totalKoin = 0;
-        let koinTarget = 500;
-
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
+
         function register() {
             const t = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
-            auth.createUserWithEmailAndPassword(e, p).then(u => { db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: t, status: 'free' }); }).catch(err => alert(err.message));
+            auth.createUserWithEmailAndPassword(e, p).then(u => {
+                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: t, status: 'free' });
+            }).catch(err => alert(err.message));
         }
+
         function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Gagal!")); }
 
         auth.onAuthStateChanged(user => {
@@ -124,77 +122,59 @@
                     document.getElementById('btnT').classList.remove('hidden');
                     document.getElementById('userIn').value = snap.val().tiktokUser;
                 });
-            }
+            } else { document.getElementById('auth-container').classList.remove('hidden'); }
         });
 
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
 
         function konek() {
-            koinTarget = parseInt(document.getElementById('targetKoin').value);
-            document.getElementById('coin-count').innerText = "0 / " + koinTarget;
-            const config = { user: document.getElementById('userIn').value, morph: document.getElementById('morphRose').value };
+            const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value, time: document.getElementById('timeIn').value, morph: document.getElementById('morphRose').value };
             socket.emit('setTarget', config);
             toggleMenu();
         }
 
-        function updateTarget(amount) {
-            totalKoin += amount;
-            if (totalKoin >= koinTarget) {
-                // EFEK MELEDAK
-                const allPhotos = document.querySelectorAll('.photo-el');
-                allPhotos.forEach(p => p.remove());
-                totalKoin = 0;
-                alert("ROOM MELEDAK! Target Tercapai!");
-            }
-            const persen = (totalKoin / koinTarget) * 100;
-            document.getElementById('progress-fill').style.width = persen + "%";
-            document.getElementById('coin-count').innerText = totalKoin + " / " + koinTarget;
-        }
-
         function createFloatingPhoto(data) {
-            // WAR MODE: Jika kado Rose, hapus satu foto orang lain secara acak
-            if (data.giftName === 'Rose') {
-                const photos = document.querySelectorAll('.photo-el');
-                if (photos.length > 5) photos[Math.floor(Math.random() * photos.length)].remove();
-            }
-
             const el = document.createElement('div');
             el.className = 'photo-el';
+            
             let imgUrl = data.url;
-            let finalSize = 80; 
-            let borderColor = "white";
+            let finalSize = parseInt(data.config.size);
+            let color = "white";
+            let anim = "";
 
-            // LOGIKA LEVEL GIFT
-            if (data.giftName === 'Rose') {
-                if (data.config.morph !== 'none') imgUrl = data.config.morph;
-                borderColor = "#ff4d4d";
-            } else if (data.diamondCount >= 30) {
-                finalSize = 160;
-                borderColor = "#ffd700";
-                el.style.animation = "shake 0.3s infinite, lightning 0.5s infinite";
-            } else if (data.diamondCount >= 5) {
-                finalSize = 110;
-                borderColor = "#00f6ff";
+            // LOGIKA GIFT (MAWAR VS DONAT DLL)
+            if (data.giftName) {
+                if (data.giftName === 'Rose') {
+                    if (data.config.morph !== 'none') imgUrl = data.config.morph;
+                    color = "#ff4d4d"; // Merah mawar
+                } else if (data.diamondCount >= 30) { 
+                    // Gift Besar (Donat keatas)
+                    finalSize *= 2; // Ukuran jadi 2x lipat
+                    color = "#ffd700"; // Emas
+                    el.style.animation = "shake 0.5s infinite"; // Goyang kencang
+                    el.style.borderWidth = "5px";
+                }
             }
 
             el.style.backgroundImage = `url('${imgUrl}')`;
             el.style.width = finalSize + 'px';
             el.style.height = finalSize + 'px';
-            el.style.borderColor = borderColor;
+            el.style.borderColor = color;
+            el.style.boxShadow = `0 0 20px ${color}`;
             document.body.appendChild(el);
 
-            if (data.diamondCount) updateTarget(data.diamondCount);
-
+            // Gerakan Melayang Bebas (Bounce)
             let posX = Math.random() * (window.innerWidth - finalSize);
             let posY = Math.random() * (window.innerHeight - finalSize);
-            let velX = (Math.random() - 0.5) * 12;
-            let velY = (Math.random() - 0.5) * 12;
+            let velX = (Math.random() - 0.5) * 10;
+            let velY = (Math.random() - 0.5) * 10;
 
             function move() {
                 posX += velX; posY += velY;
                 if (posX <= 0 || posX >= window.innerWidth - finalSize) velX *= -1;
                 if (posY <= 0 || posY >= window.innerHeight - finalSize) velY *= -1;
-                el.style.left = posX + 'px'; el.style.top = posY + 'px';
+                el.style.left = posX + 'px';
+                el.style.top = posY + 'px';
                 if (el.parentNode) requestAnimationFrame(move);
             }
             move();
@@ -202,10 +182,14 @@
             setTimeout(() => {
                 el.style.opacity = '0';
                 setTimeout(() => el.remove(), 500);
-            }, 15000);
+            }, data.config.time * 1000);
         }
 
-        socket.on('munculFoto', (data) => { createFloatingPhoto(data); });
+        // TAMPIL SAAT ADA YANG NONTON, LIKE (TAP-TAP), ATAU GIFT
+        socket.on('munculFoto', (data) => {
+            createFloatingPhoto(data);
+        });
+
     </script>
 </body>
 </html>
