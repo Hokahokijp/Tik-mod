@@ -13,8 +13,23 @@
         .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 280px; text-align: center; }
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
         .hidden { display: none !important; }
-        .photo-el { position: absolute; background-size: cover; background-position: center; border: 2px solid white; border-radius: 50%; pointer-events: none; transition: opacity 0.5s; }
         
+        /* CSS FOTO MELAYANG & ANIMASI */
+        .photo-el { 
+            position: absolute; 
+            background-size: cover; 
+            background-position: center; 
+            border: 2px solid white; 
+            border-radius: 50%; 
+            pointer-events: none; 
+            transition: opacity 0.5s; 
+            z-index: 50;
+        }
+
+        /* ANIMASI SAAT DAPAT GIFT */
+        @keyframes glow-red { 0% { box-shadow: 0 0 10px red; } 50% { box-shadow: 0 0 30px red; } 100% { box-shadow: 0 0 10px red; } }
+        @keyframes glow-gold { 0% { box-shadow: 0 0 15px gold; border-color: gold; } 50% { box-shadow: 0 0 40px gold; border-color: #fff; } 100% { box-shadow: 0 0 15px gold; border-color: gold; } }
+
         input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
         label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
@@ -22,6 +37,15 @@
     </style>
 </head>
 <body>
+
+    <div id="pay-modal" class="hidden">
+        <div class="box">
+            <h3 style="color:red; margin:0;">Limit Habis!</h3>
+            <p style="font-size:13px;">Anda sudah menggunakan 10 foto profil gratis. Silakan beli paket untuk melanjutkan.</p>
+            <button onclick="window.open('https://wa.me/YOUR_NUMBER')" style="background:#28a745; color:white;">BELI PAKET</button>
+            <button onclick="location.reload()" style="background:#eee; color:black; font-size:10px;">TUTUP</button>
+        </div>
+    </div>
 
     <div id="auth-container">
         <div class="box" id="login-form">
@@ -42,29 +66,23 @@
         </div>
     </div>
 
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px;" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
         <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
-        
         <label>Username TikTok Target:</label>
         <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
 
-        <label>Jika Ada Gift Rose (Mawar) Jadi:</label>
+        <label>Jika Ada Gift Rose Jadi:</label>
         <select id="morphRose">
             <option value="none">Foto Profil Asli</option>
             <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</option>
             <option value="https://cdn-icons-png.flaticon.com/512/1998/1998614.png"> Jadi Beruang</option>
             <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing lucu</option>
-            
             <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Biaya</option>
-            
-         <option value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi ciktak</option>
-            
-         <option value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang utan</option>
-            
-         <option value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi ikan mas</option>
-            
+            <option value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi ciktak</option>
+            <option value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang utan</option>
+            <option value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi ikan mas</option>
         </select>
 
         <label>Ukuran Foto (Pixel):</label>
@@ -84,7 +102,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
             authDomain: "sos-pro-cd66d.firebaseapp.com",
@@ -99,36 +116,32 @@
         const db = firebase.database();
         const socket = io();
 
-        let currentUser = null;
+        let useCount = 0;
+        let isPremium = false;
 
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
 
         function register() {
-            const tiktok = document.getElementById('r-tiktok').value;
-            const e = document.getElementById('r-email').value;
-            const p = document.getElementById('r-pass').value;
-            if(!tiktok) return alert("Isi Username TikTok!");
+            const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
             auth.createUserWithEmailAndPassword(e, p).then(u => {
                 db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free' });
             }).catch(err => alert(err.message));
         }
 
         function login() {
-            const e = document.getElementById('l-email').value;
-            const p = document.getElementById('l-pass').value;
-            auth.signInWithEmailAndPassword(e, p).catch(() => alert("Email/Password Salah!"));
+            auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error!"));
         }
 
         auth.onAuthStateChanged(user => {
             if (user) {
-                currentUser = user;
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
-                    if (!data) { auth.signOut(); return; }
+                    if (!data) return;
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('btnT').classList.remove('hidden');
                     document.getElementById('userIn').value = data.tiktokUser;
+                    if(data.status === 'premium') isPremium = true;
                 });
             } else {
                 document.getElementById('auth-container').classList.remove('hidden');
@@ -158,24 +171,45 @@
         }
 
         socket.on('munculFoto', (data) => {
+            // CEK PAKET PEMBELIAN
+            if (!isPremium && useCount >= 10) {
+                document.getElementById('pay-modal').classList.remove('hidden');
+                return;
+            }
+
+            useCount++;
             const el = document.createElement('div');
             el.className = 'photo-el';
             
             let imgUrl = data.url;
-            if (data.giftName === 'Rose' && data.config.morph !== 'none') {
-                imgUrl = data.config.morph;
-            }
+            if (data.giftName === 'Rose' && data.config.morph !== 'none') imgUrl = data.config.morph;
 
             el.style.backgroundImage = `url('${imgUrl}')`;
-            const size = data.config.size + 'px';
-            el.style.width = size; el.style.height = size;
-            document.body.appendChild(el);
+            const sizeNum = parseInt(data.config.size);
+            el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
+            
+            // ANIMASI GLOW BERDASARKAN KOIN/GIFT
+            if (data.diamondCount >= 100) el.style.animation = "glow-gold 1s infinite";
+            else if (data.diamondCount >= 1) el.style.animation = "glow-red 2s infinite";
 
+            document.body.appendChild(el);
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
 
-            let x = Math.random() * (window.innerWidth - parseInt(data.config.size));
-            let y = Math.random() * (window.innerHeight - parseInt(data.config.size));
-            el.style.transform = `translate(${x}px, ${y}px)`;
+            // LOGIKA MELAYANG PANTUL (BOUNCE)
+            let posX = Math.random() * (window.innerWidth - sizeNum);
+            let posY = Math.random() * (window.innerHeight - sizeNum);
+            let velX = (Math.random() - 0.5) * 8;
+            let velY = (Math.random() - 0.5) * 8;
+
+            function move() {
+                if (!el.parentElement) return;
+                posX += velX; posY += velY;
+                if (posX <= 0 || posX >= window.innerWidth - sizeNum) velX *= -1;
+                if (posY <= 0 || posY >= window.innerHeight - sizeNum) velY *= -1;
+                el.style.left = posX + 'px'; el.style.top = posY + 'px';
+                requestAnimationFrame(move);
+            }
+            move();
 
             setTimeout(() => { 
                 el.style.opacity = '0';
@@ -186,7 +220,6 @@
         socket.on('chat', (data) => {
             speak(`${data.nickname} bilang: ${data.comment}`);
         });
-
     </script>
 </body>
 </html>
