@@ -8,8 +8,14 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Agar bisa membaca file HTML
+// Agar bisa membaca file utama
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
+});
+
+// TAMBAHKAN INI AGAR PANEL ADMIN BISA DIBUKA
+app.get('/panel-admin', (req, res) => {
+    res.sendFile(__dirname + '/Panel-1990-aa.html');
 });
 
 let tiktokConn;
@@ -26,10 +32,14 @@ io.on('connection', (socket) => {
             socket.emit('status', 'Gagal! Akun tidak Live atau salah username.');
         });
 
-        // Kirim data foto ke semua yang buka web
+        // Kirim data foto dan NICKNAME ke semua yang buka web
         const sendPhoto = (dataLive) => {
             io.emit('munculFoto', { 
                 url: dataLive.profilePictureUrl, 
+                nickname: dataLive.nickname, // <-- SEKARANG SUDAH AMBIL NICKNAME
+                uniqueId: dataLive.uniqueId, // <-- TAMBAHAN USERNAME @
+                giftName: dataLive.giftName || null,
+                diamondCount: dataLive.diamondCount || 0,
                 config: data 
             });
         };
