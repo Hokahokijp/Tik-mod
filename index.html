@@ -26,6 +26,19 @@
             z-index: 50;
         }
 
+        /* LABEL NAMA DI BAWAH FOTO */
+        .nama-user-tiktok {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 2px 2px 4px #000;
+            white-space: nowrap;
+            z-index: 999;
+        }
+
         /* ANIMASI SAAT DAPAT GIFT */
         @keyframes glow-red { 0% { box-shadow: 0 0 10px red; } 50% { box-shadow: 0 0 30px red; } 100% { box-shadow: 0 0 10px red; } }
         @keyframes glow-gold { 0% { box-shadow: 0 0 15px gold; border-color: gold; } 50% { box-shadow: 0 0 40px gold; border-color: #fff; } 100% { box-shadow: 0 0 15px gold; border-color: gold; } }
@@ -132,7 +145,6 @@
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
 
-        // FUNGSI BELI ARAHKAN KE WA AA
         function beli(namaPaket, harga) {
             const pesan = `Halo Bang, saya mau beli Paket ${namaPaket} (Rp ${harga}).%0AEmail Saya: ${registeredEmail}`;
             window.open(`https://wa.me/6283815564900?text=${pesan}`, '_blank');
@@ -141,7 +153,13 @@
         function register() {
             const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
             auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free' });
+                db.ref('users/' + u.user.uid).set({ 
+                    email: e, 
+                    tiktokUser: tiktok, 
+                    status: 'free',
+                    isOnline: false,
+                    lastActive: 'Baru Daftar'
+                });
             }).catch(err => alert(err.message));
         }
 
@@ -152,13 +170,21 @@
         auth.onAuthStateChanged(user => {
             if (user) {
                 registeredEmail = user.email;
+                const waktuSekarang = new Date().toLocaleString('id-ID');
+                db.ref('users/' + user.uid).update({
+                    isOnline: true,
+                    lastActive: waktuSekarang
+                });
+                db.ref('users/' + user.uid).onDisconnect().update({
+                    isOnline: false
+                });
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
                     if (!data) return;
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('btnT').classList.remove('hidden');
                     document.getElementById('userIn').value = data.tiktokUser;
-                    if(data.status === 'premium') isPremium = true;
+                    if(data.status === 'premium' || data.status === 'Premium') isPremium = true;
                 });
             } else {
                 document.getElementById('auth-container').classList.remove('hidden');
@@ -188,35 +214,35 @@
         }
 
         socket.on('munculFoto', (data) => {
-            // CEK LIMIT 10 KALI
             if (!isPremium && useCount >= 10) {
                 document.getElementById('pay-modal').classList.remove('hidden');
                 return;
             }
-
             useCount++;
             const el = document.createElement('div');
             el.className = 'photo-el';
-            
             let imgUrl = data.url;
             if (data.giftName === 'Rose' && data.config.morph !== 'none') imgUrl = data.config.morph;
-
             el.style.backgroundImage = `url('${imgUrl}')`;
+
+            // TAMBAHAN LABEL NAMA OTOMATIS WARNA WARNI
+            const labelNama = document.createElement('div');
+            labelNama.className = 'nama-user-tiktok';
+            labelNama.innerText = data.nickname; 
+            const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF', '#00FF7F'];
+            labelNama.style.color = warnaWarni[Math.floor(Math.random() * warnaWarni.length)];
+            el.appendChild(labelNama);
+
             const sizeNum = parseInt(data.config.size);
             el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
-            
             if (data.diamondCount >= 100) el.style.animation = "glow-gold 1s infinite";
             else if (data.diamondCount >= 1) el.style.animation = "glow-red 2s infinite";
-
             document.body.appendChild(el);
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
-
-            // LOGIKA MELAYANG PANTUL (BOUNCE)
             let posX = Math.random() * (window.innerWidth - sizeNum);
             let posY = Math.random() * (window.innerHeight - sizeNum);
             let velX = (Math.random() - 0.5) * 8;
             let velY = (Math.random() - 0.5) * 8;
-
             function move() {
                 if (!el.parentElement) return;
                 posX += velX; posY += velY;
@@ -226,7 +252,6 @@
                 requestAnimationFrame(move);
             }
             move();
-
             setTimeout(() => { 
                 el.style.opacity = '0';
                 setTimeout(() => el.remove(), 500);
