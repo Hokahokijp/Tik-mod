@@ -3,182 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bubble & Square Photo Control</title>
+    <title>Tournament Balap TikTok 7 Player</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
-            margin: 0;
-            height: 100vh;
-            background: #0f0f1a;
-            overflow: hidden;
-            font-family: sans-serif;
-            position: fixed;
-            width: 100%;
+            margin: 0; height: 100vh; background: #0f0f1a;
+            overflow: hidden; font-family: 'Arial Black', sans-serif;
+            color: white;
         }
 
-        /* --- BINGKAI TETAP DI ATAS --- */
-        #leaderboard-frame {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            height: 250px;
-            z-index: 100;
-            pointer-events: none;
+        /* LINTASAN ATAS */
+        #race-track {
+            position: absolute; top: 0; width: 100%; height: 50%;
+            background: linear-gradient(to bottom, #222, #111);
+            border-bottom: 4px solid #ff00cc;
         }
 
-        .bingkai-slot {
-            position: absolute;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            border: 4px solid #fff;
-            box-shadow: 0 0 15px rgba(255,255,255,0.3);
-            /* Gambar Background Bingkai dari Link Abang */
-            background-image: url('https://i.ibb.co.com/Xr60g95B/download-5.jpg');
+        /* AREA JOIN BAWAH */
+        #join-area {
+            position: absolute; top: 50%; width: 100%; height: 50%;
+            background: #0a0a12;
         }
 
-        .bingkai-slot[data-rank="1"] { top: 0; left: calc(50% - 55px); width: 110px; height: 110px; border-color: #ff00ff; }
-        .bingkai-slot[data-rank="2"] { top: 30px; left: calc(50% + 80px); width: 85px; height: 85px; border-color: #00ffff; }
-        .bingkai-slot[data-rank="3"] { top: 30px; left: calc(50% - 165px); width: 85px; height: 85px; border-color: #ff4500; }
-        .bingkai-slot[data-rank="4"] { top: 130px; left: calc(50% + 70px); width: 75px; height: 75px; border-color: #00ff00; }
-        .bingkai-slot[data-rank="5"] { top: 145px; left: calc(50% - 40px); width: 80px; height: 80px; border-color: #ffff00; }
-        .bingkai-slot[data-rank="6"] { top: 130px; left: calc(50% - 145px); width: 75px; height: 75px; border-color: #ff0000; }
-
-        /* GARIS PEMBATAS TENGAH */
-        #mid-line {
-            position: fixed;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ffcc, transparent);
-            box-shadow: 0 0 10px #00ffcc;
-            z-index: 10;
+        /* STATUS GAME */
+        #game-status {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1000; text-align: center; background: rgba(0,0,0,0.8);
+            padding: 20px; border-radius: 15px; border: 2px solid #00ffcc;
         }
 
-        /* FOTO MELAYANG */
-        .photo-el {
-            position: absolute;
-            background-size: cover;
-            background-position: center;
-            border: 2px solid white;
-            pointer-events: none;
-            z-index: 50;
-            transition: border-radius 0.3s ease, opacity 0.5s ease;
+        .racer {
+            position: absolute; width: 80px; height: 80px;
+            border-radius: 50%; background-size: cover;
+            border: 4px solid gold; box-shadow: 0 0 15px gold;
+            z-index: 200; transition: transform 0.1s linear;
         }
 
-        #settings-panel {
-            position: fixed; top: 15px; right: 15px; width: 200px;
-            background: rgba(25, 25, 25, 0.95); padding: 15px; border-radius: 12px;
-            color: white; z-index: 1000; border: 1px solid rgba(255,255,255,0.2);
+        .name-tag {
+            position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
+            background: black; font-size: 10px; padding: 2px 5px; white-space: nowrap;
         }
 
-        h3 { margin: 0 0 10px 0; font-size: 13px; color: #00ffcc; text-align: center; }
-        label { font-size: 11px; display: block; margin-bottom: 4px; color: #bbb; }
-        input[type="range"], select { width: 100%; margin-bottom: 12px; background: #333; color: white; border: none; padding: 5px; border-radius: 4px; }
-        .btn-hide { width: 100%; padding: 8px; background: #ff4d4d; border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .floating {
+            position: absolute; border-radius: 50%; background-size: cover;
+            border: 2px solid white; opacity: 0.7; z-index: 50;
+        }
+
+        #finish-line {
+            position: absolute; right: 50px; top: 0; width: 10px; height: 100%;
+            background: repeating-linear-gradient(0deg, #fff, #fff 10px, #000 10px, #000 20px);
+        }
     </style>
 </head>
 <body>
 
-    <div id="mid-line"></div>
-
-    <div id="leaderboard-frame">
-        <div class="bingkai-slot" data-rank="1"></div>
-        <div class="bingkai-slot" data-rank="2"></div>
-        <div class="bingkai-slot" data-rank="3"></div>
-        <div class="bingkai-slot" data-rank="4"></div>
-        <div class="bingkai-slot" data-rank="5"></div>
-        <div class="bingkai-slot" data-rank="6"></div>
+    <div id="race-track">
+        <div id="finish-line"></div>
+        <div id="racers-container"></div>
     </div>
+    
+    <div id="join-area"></div>
 
-    <div id="settings-panel">
-        <h3>⚙️ PENGATURAN</h3>
-        <label>Bentuk Foto</label>
-        <select id="shapeCtrl">
-            <option value="50%">Bulat</option>
-            <option value="0%">Kotak</option>
-        </select>
-        <label>Ukuran</label>
-        <input type="range" id="sizeCtrl" min="40" max="150" value="70">
-        <label>Kecepatan</label>
-        <input type="range" id="speedCtrl" min="1" max="10" value="3">
-        <label>Waktu Hilang</label>
-        <input type="range" id="timerCtrl" min="1" max="20" value="10">
-        <button class="btn-hide">Tutup</button>
+    <div id="game-status">
+        <div id="msg">MENUNGGU PEMBALAP...</div>
+        <div id="count" style="font-size: 40px; color: #ff00cc;">0/7</div>
     </div>
 
     <script>
-        let photos = [];
-        
-        function createPhoto() {
-            const size = parseInt(document.getElementById('sizeCtrl').value);
-            const winH = window.innerHeight;
+        const socket = io();
+        let raceActive = false;
+        let pendaftar = []; // Antrian 7 orang
+        let spectators = [];
+        let finishers = 0;
+
+        // 1. KONEKSI TANPA REFRESH
+        socket.on('connect', () => {
+            console.log("Sistem Aktif & Terhubung!");
+            document.getElementById('msg').innerText = "MENUNGGU 7 PEMBALAP...";
+        });
+
+        // 2. LOGIKA GIFT (MASUK BALAPAN)
+        socket.on('munculFoto', (data) => {
+            if (raceActive) return; // Kalau sudah mulai, tunggu match depan
+
+            // Cek apakah user sudah daftar
+            if (!pendaftar.find(u => u.id === data.uniqueId)) {
+                if (pendaftar.length < 7) {
+                    pendaftar.push({
+                        id: data.uniqueId,
+                        name: data.nickname,
+                        url: data.url,
+                        speed: 1 + (data.diamondCount * 0.5),
+                        x: 0,
+                        y: 30 + (pendaftar.length * 40),
+                        el: null,
+                        finished: false
+                    });
+                    
+                    updateStatus();
+                    
+                    if (pendaftar.length === 7) {
+                        startCountdown();
+                    }
+                }
+            } else {
+                // Jika sudah ada dalam antrian dan nge-gift lagi, tambah speed
+                let user = pendaftar.find(u => u.id === data.uniqueId);
+                user.speed += (data.diamondCount * 0.5);
+            }
+        });
+
+        function updateStatus() {
+            document.getElementById('count').innerText = `${pendaftar.length}/7`;
+        }
+
+        function startCountdown() {
+            let timeLeft = 10;
+            const timer = setInterval(() => {
+                document.getElementById('msg').innerText = "BALAPAN DIMULAI DALAM";
+                document.getElementById('count').innerText = timeLeft;
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(timer);
+                    runRace();
+                }
+            }, 1000);
+        }
+
+        function runRace() {
+            document.getElementById('game-status').style.display = 'none';
+            raceActive = true;
             
-            const p = {
-                id: Date.now() + Math.random(),
+            pendaftar.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'racer';
+                div.style.backgroundImage = `url('${p.url}')`;
+                div.innerHTML = `<div class="name-tag">${p.name}</div>`;
+                document.getElementById('racers-container').appendChild(div);
+                p.el = div;
+            });
+        }
+
+        // 3. LOGIKA JOIN/CHAT (HANYA MELAYANG DI BAWAH)
+        socket.on('memberJoin', (data) => spawnSpectator(data));
+        socket.on('chat', (data) => spawnSpectator(data));
+
+        function spawnSpectator(data) {
+            const size = 50;
+            const s = {
                 el: document.createElement('div'),
                 x: Math.random() * (window.innerWidth - size),
-                // SPAWN DI BAWAH GARIS TENGAH (55% layar ke bawah)
-                y: (winH * 0.55) + (Math.random() * (winH * 0.3)), 
+                y: (window.innerHeight * 0.55) + (Math.random() * (window.innerHeight * 0.35)),
                 dx: (Math.random() - 0.5) * 2,
-                dy: (Math.random() - 0.5) * 2,
-                spawnTime: Date.now()
+                dy: (Math.random() - 0.5) * 2
             };
-
-            p.el.className = 'photo-el';
-            p.el.style.backgroundImage = `url('https://picsum.photos/200?random=${p.id}')`;
-            document.body.appendChild(p.el);
-            photos.push(p);
+            s.el.className = 'floating';
+            s.el.style.width = size + 'px';
+            s.el.style.height = size + 'px';
+            s.el.style.backgroundImage = `url('${data.profilePictureUrl || data.url}')`;
+            document.getElementById('join-area').appendChild(s.el);
+            spectators.push(s);
+            setTimeout(() => { s.el.remove(); spectators.splice(spectators.indexOf(s), 1); }, 8000);
         }
 
-        setInterval(() => { if (photos.length < 15) createPhoto(); }, 2000);
+        // 4. LOOP ANIMASI UTAMA
+        function update() {
+            if (raceActive) {
+                const finishLineX = window.innerWidth - 130;
+                
+                pendaftar.forEach(p => {
+                    if (!p.finished) {
+                        p.x += p.speed * 0.5;
+                        if (p.x >= finishLineX) {
+                            p.x = finishLineX;
+                            p.finished = true;
+                            finishers++;
+                        }
+                    }
+                    p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+                });
 
-        function animate() {
-            const size = parseInt(document.getElementById('sizeCtrl').value);
-            const speed = parseFloat(document.getElementById('speedCtrl').value);
-            const shape = document.getElementById('shapeCtrl').value;
-            const lifeSpan = parseInt(document.getElementById('timerCtrl').value) * 1000;
-            const winW = window.innerWidth;
-            const winH = window.innerHeight;
-            const winH_Mid = winH / 2; // GARIS TENGAH
-
-            for (let i = photos.length - 1; i >= 0; i--) {
-                let p = photos[i];
-                if (Date.now() - p.spawnTime > lifeSpan) {
-                    p.el.remove();
-                    photos.splice(i, 1);
-                    continue;
+                if (finishers === 7) {
+                    resetRace();
                 }
-
-                p.el.style.width = size + 'px';
-                p.el.style.height = size + 'px';
-                p.el.style.borderRadius = shape;
-
-                p.x += p.dx * speed;
-                p.y += p.dy * speed;
-
-                // PANTULAN HORIZONTAL
-                if (p.x + size > winW || p.x < 0) p.dx *= -1;
-
-                // --- PANTULAN VERTIKAL (HANYA DI BAWAH GARIS) ---
-                // Jika mau naik ke atas garis tengah, pantulkan balik ke bawah
-                if (p.y < winH_Mid) { 
-                    p.y = winH_Mid; 
-                    p.dy *= -1; 
-                }
-                // Jika mentok bawah layar
-                if (p.y + size > winH) { 
-                    p.y = winH - size; 
-                    p.dy *= -1; 
-                }
-
-                p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
             }
-            requestAnimationFrame(animate);
+
+            spectators.forEach(s => {
+                s.x += s.dx; s.y += s.dy;
+                if (s.x < 0 || s.x > window.innerWidth - 50) s.dx *= -1;
+                if (s.y < window.innerHeight * 0.5 || s.y > window.innerHeight - 50) s.dy *= -1;
+                s.el.style.transform = `translate(${s.x}px, ${s.y}px)`;
+            });
+
+            requestAnimationFrame(update);
         }
-        animate();
+
+        function resetRace() {
+            setTimeout(() => {
+                raceActive = false;
+                finishers = 0;
+                pendaftar = [];
+                document.getElementById('racers-container').innerHTML = '';
+                document.getElementById('game-status').style.display = 'block';
+                document.getElementById('msg').innerText = "MENUNGGU 7 PEMBALAP...";
+                updateStatus();
+            }, 5000); // Tunggu 5 detik baru reset untuk match baru
+        }
+
+        update();
     </script>
 </body>
 </html>
