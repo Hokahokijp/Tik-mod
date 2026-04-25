@@ -3,166 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Live - Stay & Leave System</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <title>Bubble & Square Photo Control</title>
     <style>
         body {
-            margin: 0; height: 100vh; background: #050510;
-            overflow: hidden; font-family: 'Arial Black', sans-serif; color: white;
+            margin: 0;
+            height: 100vh;
+            background: #0f0f1a;
+            overflow: hidden;
+            font-family: sans-serif;
+            position: fixed;
+            width: 100%;
         }
 
-        /* --- AREA BINGKAI BALAP (ATAS) --- */
-        #race-track {
-            position: absolute; top: 0; width: 100%; height: 50%;
-            background: rgba(255,255,255,0.02); border-bottom: 3px solid #00ffcc;
+        #open-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: #00ffcc;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            z-index: 2000;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
         }
 
-        .slot-container {
-            position: absolute; width: 100px; height: 100px;
-            display: flex; justify-content: center; align-items: center;
+        #settings-panel {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 200px;
+            background: rgba(25, 25, 25, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
-        /* GAMBAR BINGKAI DARI LINK ABANG */
-        .frame-image {
-            position: absolute; width: 100%; height: 100%;
-            background-image: url('https://i.ibb.co.com/Xr60g95B/download-5.jpg');
-            background-size: contain; background-repeat: no-repeat;
-            z-index: 10;
+        .photo-el {
+            position: absolute;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid white;
+            pointer-events: none;
+            left: 0;
+            top: 0;
+            transition: border-radius 0.3s ease, opacity 0.5s ease;
         }
 
-        .user-photo {
-            width: 70%; height: 70%; border-radius: 50%;
-            background-size: cover; background-position: center;
-            z-index: 5;
-        }
-
-        .id-name {
-            position: absolute; bottom: -15px; font-size: 10px;
-            color: #00ffcc; white-space: nowrap; font-weight: bold;
-        }
-
-        /* POSISI SLOT JALUR */
-        .slot-1 { top: 10px; left: 20px; }
-        .slot-2 { top: 100px; left: 20px; }
-        .slot-3 { top: 190px; left: 20px; }
-
-        /* --- AREA MELAYANG (BAWAH) --- */
-        #audience-area {
-            position: absolute; top: 50%; width: 100%; height: 50%;
-        }
-
-        .floating-user {
-            position: absolute; border: 2px solid #fff; border-radius: 50%;
-            background-size: cover; z-index: 50; transition: transform 0.1s linear;
+        h3 { margin: 0 0 10px 0; font-size: 13px; color: #00ffcc; text-align: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        label { font-size: 11px; display: block; margin-bottom: 4px; color: #bbb; }
+        input[type="range"], select { width: 100%; margin-bottom: 12px; cursor: pointer; background: #333; color: white; border: none; padding: 5px; border-radius: 4px; }
+        
+        .btn-hide {
+            width: 100%;
+            padding: 8px;
+            background: #ff4d4d;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <div id="race-track">
-        <div id="lane-1" class="slot-container slot-1" style="display:none;">
-            <div class="frame-image"></div>
-            <div id="img-1" class="user-photo"></div>
-            <div id="name-1" class="id-name"></div>
-        </div>
-        <div id="lane-2" class="slot-container slot-2" style="display:none;">
-            <div class="frame-image"></div>
-            <div id="img-2" class="user-photo"></div>
-            <div id="name-2" class="id-name"></div>
-        </div>
-        <div id="lane-3" class="slot-container slot-3" style="display:none;">
-            <div class="frame-image"></div>
-            <div id="img-3" class="user-photo"></div>
-            <div id="name-3" class="id-name"></div>
-        </div>
+    <button id="open-btn" onclick="togglePanel(true)">⚙️</button>
+
+    <div id="settings-panel">
+        <h3>⚙️ PENGATURAN</h3>
+        
+        <label>Bentuk Foto</label>
+        <select id="shapeCtrl">
+            <option value="50%">Bulat (Bubble)</option>
+            <option value="0%">Kotak (Persegi)</option>
+            <option value="20px">Rounded</option>
+        </select>
+
+        <label>Ukuran</label>
+        <input type="range" id="sizeCtrl" min="40" max="180" value="80">
+        
+        <label>Kecepatan Gerak</label>
+        <input type="range" id="speedCtrl" min="0" max="10" value="3">
+
+        <label>Waktu Hilang (Detik)</label>
+        <input type="range" id="timerCtrl" min="1" max="20" value="10">
+        <span id="timerVal" style="font-size: 10px; display: block; margin-top: -10px; margin-bottom: 10px; text-align: right;">10s</span>
+
+        <button class="btn-hide" onclick="togglePanel(false)">Tutup Pengaturan</button>
     </div>
 
-    <div id="audience-area"></div>
-
     <script>
-        const socket = io();
-        let activeUsers = {}; // Simpan data user yang lagi di room
-        let racers = []; // Data pemain di bingkai atas
+        let photos = [];
+        const panel = document.getElementById('settings-panel');
+        const openBtn = document.getElementById('open-btn');
+        const timerCtrl = document.getElementById('timerCtrl');
+        const timerVal = document.getElementById('timerVal');
 
-        // 1. KETIKA JOIN ROOM -> TAMPIL FOTO
-        socket.on('memberJoin', (data) => {
-            if (!activeUsers[data.uniqueId]) {
-                const el = document.createElement('div');
-                el.className = 'floating-user';
-                el.style.width = '60px'; el.style.height = '60px';
-                el.style.backgroundImage = `url('${data.profilePictureUrl}')`;
-                
-                // Posisi awal acak di area bawah
-                const x = Math.random() * (window.innerWidth - 60);
-                const y = (window.innerHeight * 0.55) + (Math.random() * (window.innerHeight * 0.3));
-                
-                document.getElementById('audience-area').appendChild(el);
-                
-                activeUsers[data.uniqueId] = {
-                    el: el,
-                    x: x, y: y,
-                    dx: (Math.random() - 0.5) * 2,
-                    dy: (Math.random() - 0.5) * 2
-                };
-            }
-        });
+        function togglePanel(show) {
+            panel.style.display = show ? 'block' : 'none';
+            openBtn.style.display = show ? 'none' : 'block';
+        }
 
-        // 2. KETIKA LEAVE ROOM -> HAPUS FOTO
-        socket.on('memberLeave', (data) => {
-            if (activeUsers[data.uniqueId]) {
-                activeUsers[data.uniqueId].el.remove();
-                delete activeUsers[data.uniqueId];
-            }
-            // Jika dia ada di bingkai balap, kosongkan juga
-            const racerIdx = racers.findIndex(r => r.id === data.uniqueId);
-            if (racerIdx !== -1) {
-                const laneNum = racerIdx + 1;
-                document.getElementById('lane-' + laneNum).style.display = 'none';
-                racers.splice(racerIdx, 1);
-            }
-        });
+        // Update teks detik secara live
+        timerCtrl.oninput = () => { timerVal.innerText = timerCtrl.value + "s"; };
 
-        // 3. JIKA GIFT -> MASUK BINGKAI & BALAP
-        socket.on('munculFoto', (data) => {
-            let p = racers.find(x => x.id === data.uniqueId);
-            if (!p && racers.length < 3) {
-                const laneNum = racers.length + 1;
-                const container = document.getElementById('lane-' + laneNum);
-                document.getElementById('img-' + laneNum).style.backgroundImage = `url('${data.url}')`;
-                document.getElementById('name-' + laneNum).innerText = data.uniqueId;
-                container.style.display = 'flex';
-                
-                p = { id: data.uniqueId, lane: container, x: 20, speed: data.diamondCount * 2 };
-                racers.push(p);
-            } else if (p) {
-                p.speed += data.diamondCount * 2;
-            }
-        });
+        function createPhoto() {
+            const id = Date.now() + Math.random();
+            const p = {
+                id: id,
+                el: document.createElement('div'),
+                x: Math.random() * (window.innerWidth - 100),
+                y: Math.random() * (window.innerHeight - 100),
+                dx: (Math.random() - 0.5) * 2,
+                dy: (Math.random() - 0.5) * 2,
+                spawnTime: Date.now()
+            };
 
-        // ANIMASI GERAKAN
+            p.el.className = 'photo-el';
+            p.el.style.backgroundImage = `url('https://picsum.photos/200?random=${id}')`;
+            document.body.appendChild(p.el);
+            photos.push(p);
+        }
+
+        // Munculkan 1 foto setiap 2 detik secara otomatis
+        setInterval(() => {
+            if (photos.length < 15) createPhoto();
+        }, 2000);
+
         function animate() {
+            const size = parseInt(document.getElementById('sizeCtrl').value);
+            const speed = parseFloat(document.getElementById('speedCtrl').value);
+            const shape = document.getElementById('shapeCtrl').value;
+            const lifeSpan = parseInt(timerCtrl.value) * 1000;
+
             const winW = window.innerWidth;
             const winH = window.innerHeight;
+            const now = Date.now();
 
-            // Gerakan penonton di bawah (Stay selama di room)
-            for (let id in activeUsers) {
-                let u = activeUsers[id];
-                u.x += u.dx; u.y += u.dy;
-                if (u.x < 0 || u.x > winW - 60) u.dx *= -1;
-                if (u.y < winH * 0.5 || u.y > winH - 60) u.dy *= -1;
-                u.el.style.transform = `translate(${u.x}px, ${u.y}px)`;
+            for (let i = photos.length - 1; i >= 0; i--) {
+                let p = photos[i];
+
+                // Cek apakah sudah waktunya menghilang
+                if (now - p.spawnTime > lifeSpan) {
+                    p.el.style.opacity = '0';
+                    setTimeout(() => {
+                        if (p.el.parentNode) p.el.remove();
+                    }, 500);
+                    photos.splice(i, 1);
+                    continue;
+                }
+
+                // Update Bentuk & Ukuran
+                p.el.style.width = size + 'px';
+                p.el.style.height = size + 'px';
+                p.el.style.borderRadius = shape;
+
+                // Gerak
+                p.x += p.dx * speed;
+                p.y += p.dy * speed;
+
+                // Pantulan (Hard Clamp agar tidak keluar layar)
+                if (p.x + size > winW) { p.x = winW - size; p.dx *= -1; }
+                else if (p.x < 0) { p.x = 0; p.dx *= -1; }
+
+                if (p.y + size > winH) { p.y = winH - size; p.dy *= -1; }
+                else if (p.y < 0) { p.y = 0; p.dy *= -1; }
+
+                p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
             }
-
-            // Gerakan balap di atas
-            racers.forEach(p => {
-                p.x += p.speed * 0.05;
-                if (p.x > winW) p.x = -100;
-                if (p.speed > 0.5) p.speed *= 0.99;
-                p.lane.style.transform = `translateX(${p.x}px)`;
-            });
 
             requestAnimationFrame(animate);
         }
+
+        // Inisialisasi awal beberapa foto
+        for(let i=0; i<5; i++) createPhoto();
+        
         animate();
     </script>
 </body>
