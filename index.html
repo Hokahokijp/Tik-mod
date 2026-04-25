@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v2.1</title>
+    <title>TikTok Overlay Premium v2.2</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -14,42 +14,38 @@
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
         .hidden { display: none !important; }
         
-        /* CSS FOTO MELAYANG & ANIMASI */
+        /* CSS FOTO MELAYANG */
         .photo-el { 
             position: absolute; 
             background-size: cover; 
             background-position: center; 
             border-radius: 50%; 
             pointer-events: none; 
-            transition: opacity 0.5s; 
+            transition: opacity 0.5s, width 0.3s, height 0.3s; 
             z-index: 50;
             border: 4px solid transparent;
             background-clip: padding-box;
             box-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
 
-        /* ANIMASI RING BERPUTAR UNTUK SEMUA USER (CHAT/LIKE) */
         @keyframes neon-rotate {
             0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px #00fff2; }
             50% { box-shadow: 0 0 20px #ff00ff; }
             100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px #00fff2; }
         }
 
-        /* ANIMASI LEDAKAN UNTUK GIFT MEWAH (100+ COIN) */
         @keyframes mega-glow {
             0% { transform: scale(1); box-shadow: 0 0 25px gold; border-color: gold; }
             50% { transform: scale(1.1); box-shadow: 0 0 50px #ff4500; border-color: #ff4500; }
             100% { transform: scale(1); box-shadow: 0 0 25px gold; border-color: gold; }
         }
 
-        /* ANIMASI UNTUK GIFT BIASA (1-99 COIN) */
         @keyframes gift-glow {
             0% { box-shadow: 0 0 15px #ff0055; border-color: #ff0055; }
             50% { box-shadow: 0 0 35px #ff0055; border-color: #fff; }
             100% { box-shadow: 0 0 15px #ff0055; border-color: #ff0055; }
         }
 
-        /* LABEL NAMA DI BAWAH FOTO */
         .nama-user-tiktok {
             position: absolute;
             bottom: -28px;
@@ -65,10 +61,6 @@
         input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
         label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 5px; border-radius: 5px; }
-        
-        .btn-paket { background: #28a745; color: white; font-size: 12px; margin-top: 5px; text-align: left; padding: 12px; }
-        .price { float: right; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -76,12 +68,7 @@
     <div id="pay-modal" class="hidden">
         <div class="box">
             <h3 style="color:red; margin:0;">Limit Habis!</h3>
-            <p style="font-size:12px; margin-bottom:10px;">Pilih paket untuk melanjutkan:</p>
-            <button class="btn-paket" onclick="beli('Satu Hari', '11.000')">Paket 1 Hari <span class="price">11rb</span></button>
-            <button class="btn-paket" onclick="beli('Satu Minggu', '65.000')">Paket 1 Minggu <span class="price">65rb</span></button>
-            <button class="btn-paket" onclick="beli('Dua Minggu', '50.000')">Paket 2 Minggu <span class="price">50rb</span></button>
-            <button class="btn-paket" onclick="beli('Satu Bulan', '100.000')">Paket 1 Bulan <span class="price">100rb</span></button>
-            <button class="btn-paket" onclick="beli('Selamanya', '18.900')" style="background:#6f42c1;">Paket Selamanya <span class="price">18.9rb</span></button>
+            <button onclick="beli('Selamanya', '18.900')" style="background:#6f42c1; color:white;">Beli Paket Selamanya</button>
             <button onclick="location.reload()" style="background:#eee; color:black; font-size:10px;">TUTUP</button>
         </div>
     </div>
@@ -110,82 +97,43 @@
         <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
         <label>Username TikTok Target:</label>
         <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
-        <label>Jika Ada Gift Rose Jadi:</label>
-        <select id="morphRose">
-            <option value="none">Foto Profil Asli</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/1998/1998614.png"> Jadi Beruang</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing lucu</option>
-            <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Biaya</option>
-            <option value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi ciktak</option>
-            <option value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang utan</option>
-            <option value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi ikan mas</option>
-        </select>
-        <label>Ukuran Foto (Pixel):</label>
-        <input type="range" id="sizeIn" min="40" max="250" value="100">
-        <label>Lama Melayang (Detik):</label>
-        <input type="number" id="timeIn" value="10">
+        <label>Ukuran Dasar (Pixel):</label>
+        <input type="range" id="sizeIn" min="40" max="200" value="80">
         <div class="switch-box">
-            <span>🔊 Suara Google (TTS)</span>
-            <input type="checkbox" id="ttsOn" style="width:20px" checked>
+            <span>🔊 TTS</span>
+            <input type="checkbox" id="ttsOn" checked>
         </div>
-        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
-        <button onclick="auth.signOut(); location.reload();" style="background:#dc3545; color:white; font-size:10px; padding:5px;">Logout Akun</button>
+        <button onclick="konek()" style="background:#007bff; color:white;">KONEK SEKARANG</button>
+        <button onclick="auth.signOut(); location.reload();" style="font-size:10px;">Logout</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
-            authDomain: "sos-pro-cd66d.firebaseapp.com",
-            databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
-            projectId: "sos-pro-cd66d",
-            storageBucket: "sos-pro-cd66d.appspot.com",
-            messagingSenderId: "879343847954",
-            appId: "1:879343847954:web:cc0b959202055fc252e6cb"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", authDomain: "sos-pro-cd66d.firebaseapp.com", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com", projectId: "sos-pro-cd66d", storageBucket: "sos-pro-cd66d.appspot.com", messagingSenderId: "879343847954", appId: "1:879343847954:web:cc0b959202055fc252e6cb" };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
         const socket = io();
 
-        let useCount = 0;
-        let isPremium = false;
-        let registeredEmail = "";
-
-        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
-        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
-
-        function beli(namaPaket, harga) {
-            const pesan = `Halo Bang, saya mau beli Paket ${namaPaket} (Rp ${harga}).%0AEmail Saya: ${registeredEmail}`;
-            window.open(`https://wa.me/6283815564900?text=${pesan}`, '_blank');
-        }
-
-        function register() {
-            const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
-            auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free', isOnline: false, lastActive: 'Baru Daftar' });
-            }).catch(err => alert(err.message));
-        }
-
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error Login!")); }
+        let useCount = 0, isPremium = false;
+        const activeUsers = {}; // DAFTAR USER DI LAYAR
 
         auth.onAuthStateChanged(user => {
             if (user) {
-                registeredEmail = user.email;
-                db.ref('users/' + user.uid).update({ isOnline: true, lastActive: new Date().toLocaleString('id-ID') });
-                db.ref('users/' + user.uid).onDisconnect().update({ isOnline: false });
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
                     if (!data) return;
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('btnT').classList.remove('hidden');
                     document.getElementById('userIn').value = data.tiktokUser;
-                    if(data.status === 'premium' || data.status === 'Premium') isPremium = true;
+                    if(data.status?.toLowerCase() === 'premium') isPremium = true;
                 });
             } else { document.getElementById('auth-container').classList.remove('hidden'); }
         });
 
+        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(e => alert(e.message)); }
+        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
+        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
 
         function speak(text) {
@@ -197,35 +145,67 @@
         }
 
         function konek() {
-            const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value, time: document.getElementById('timeIn').value, morph: document.getElementById('morphRose').value };
+            const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value };
             socket.emit('setTarget', config);
             toggleMenu();
             speak("Menghubungkan ke " + config.user);
         }
 
-        socket.on('munculFoto', (data) => {
-            if (!isPremium && useCount >= 10) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
+        // --- LOGIKA UTAMA TAMPILAN ---
+
+        socket.on('munculFoto', (data) => handleUserDisplay(data));
+        socket.on('userJoin', (data) => handleUserDisplay(data));
+
+        function handleUserDisplay(data) {
+            if (!isPremium && useCount >= 50) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
             useCount++;
-            
+
+            const userId = data.userId || data.nickname;
+
+            // Jika user sudah ada, update saja animasinya
+            if (activeUsers[userId]) {
+                updateAnimation(activeUsers[userId], data);
+                if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
+                return;
+            }
+
+            // Buat element baru
             const el = document.createElement('div');
             el.className = 'photo-el';
-            
-            let imgUrl = data.url;
-            if (data.giftName === 'Rose' && data.config.morph !== 'none') imgUrl = data.config.morph;
-            el.style.backgroundImage = `url('${imgUrl}')`;
+            el.id = 'user-' + userId;
+            el.style.backgroundImage = `url('${data.url}')`;
 
-            // LABEL NAMA OTOMATIS
             const labelNama = document.createElement('div');
             labelNama.className = 'nama-user-tiktok';
             labelNama.innerText = data.nickname || "User";
-            const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF', '#00FF7F'];
+            const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF'];
             labelNama.style.color = warnaWarni[Math.floor(Math.random() * warnaWarni.length)];
             el.appendChild(labelNama);
 
-            // LOGIKA ANIMASI SESUAI KOIN GIFT
+            updateAnimation(el, data);
+            document.body.appendChild(el);
+            activeUsers[userId] = el;
+
+            startFloating(el, parseInt(data.config.size));
+            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
+        }
+
+        socket.on('userLeave', (data) => {
+            const el = document.getElementById('user-' + data.userId);
+            if (el) {
+                el.style.opacity = '0';
+                setTimeout(() => {
+                    el.remove();
+                    delete activeUsers[data.userId];
+                }, 500);
+            }
+        });
+
+        function updateAnimation(el, data) {
             const sizeNum = parseInt(data.config.size);
             if (data.diamondCount >= 100) {
-                el.style.width = (sizeNum + 40) + 'px'; el.style.height = (sizeNum + 40) + 'px';
+                el.style.width = (sizeNum + 40) + 'px'; 
+                el.style.height = (sizeNum + 40) + 'px';
                 el.style.animation = "mega-glow 0.8s infinite ease-in-out";
                 el.style.border = "6px solid gold";
             } else if (data.diamondCount >= 1) {
@@ -237,30 +217,24 @@
                 el.style.animation = "neon-rotate 3s infinite linear";
                 el.style.border = "3px solid white";
             }
+        }
 
-            document.body.appendChild(el);
-            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
-            
-            let posX = Math.random() * (window.innerWidth - sizeNum);
-            let posY = Math.random() * (window.innerHeight - sizeNum);
-            let velX = (Math.random() - 0.5) * 8;
-            let velY = (Math.random() - 0.5) * 8;
-            
+        function startFloating(el, size) {
+            let posX = Math.random() * (window.innerWidth - size);
+            let posY = Math.random() * (window.innerHeight - size);
+            let velX = (Math.random() - 0.5) * 4;
+            let velY = (Math.random() - 0.5) * 4;
+
             function move() {
                 if (!el.parentElement) return;
                 posX += velX; posY += velY;
-                if (posX <= 0 || posX >= window.innerWidth - sizeNum) velX *= -1;
-                if (posY <= 0 || posY >= window.innerHeight - sizeNum) velY *= -1;
+                if (posX <= 0 || posX >= window.innerWidth - size) velX *= -1;
+                if (posY <= 0 || posY >= window.innerHeight - size) velY *= -1;
                 el.style.left = posX + 'px'; el.style.top = posY + 'px';
                 requestAnimationFrame(move);
             }
             move();
-
-            setTimeout(() => { 
-                el.style.opacity = '0';
-                setTimeout(() => el.remove(), 500);
-            }, data.config.time * 1000);
-        });
+        }
 
         socket.on('chat', (data) => { speak(`${data.nickname} bilang: ${data.comment}`); });
     </script>
