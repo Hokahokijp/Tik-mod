@@ -2,27 +2,28 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v2.1</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble & Square Photo Control</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: sans-serif; }
-        #auth-container, #pay-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
-        .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 300px; text-align: center; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
-        .hidden { display: none !important; }
-        
-        /* CSS TAMBAHAN UNTUK BINGKAI SESUAI GAMBAR */
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #0f0f1a;
+            overflow: hidden;
+            font-family: sans-serif;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* --- BINGKAI SESUAI GAMBAR (TOP 6) --- */
         #leaderboard-frame {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
-            height: 280px;
-            z-index: 10;
+            height: 250px;
+            z-index: 100; /* Di atas segalanya */
             pointer-events: none;
         }
 
@@ -32,331 +33,193 @@
             background-size: cover;
             background-position: center;
             border: 4px solid #fff;
-            transition: all 0.5s ease-in-out;
             box-shadow: 0 0 15px rgba(255,255,255,0.3);
         }
 
-        /* Posisi Koordinat Sesuai Gambar */
-        .bingkai-slot[data-rank="1"] { top: 0; left: calc(50% - 60px); width: 120px; height: 120px; border-color: #ff00ff; z-index: 5; }
-        .bingkai-slot[data-rank="2"] { top: 40px; left: calc(50% + 90px); width: 90px; height: 90px; border-color: #00ffff; }
-        .bingkai-slot[data-rank="3"] { top: 40px; left: calc(50% - 180px); width: 90px; height: 90px; border-color: #ff4500; }
-        .bingkai-slot[data-rank="4"] { top: 140px; left: calc(50% + 70px); width: 80px; height: 80px; border-color: #00ff00; }
-        .bingkai-slot[data-rank="5"] { top: 155px; left: calc(50% - 40px); width: 85px; height: 85px; border-color: #ffff00; }
-        .bingkai-slot[data-rank="6"] { top: 140px; left: calc(50% - 150px); width: 80px; height: 80px; border-color: #ff0000; }
+        /* Posisi Koordinat Slot Sultan */
+        .bingkai-slot[data-rank="1"] { top: 0; left: calc(50% - 55px); width: 110px; height: 110px; border-color: #ff00ff; }
+        .bingkai-slot[data-rank="2"] { top: 30px; left: calc(50% + 80px); width: 85px; height: 85px; border-color: #00ffff; }
+        .bingkai-slot[data-rank="3"] { top: 30px; left: calc(50% - 165px); width: 85px; height: 85px; border-color: #ff4500; }
+        .bingkai-slot[data-rank="4"] { top: 130px; left: calc(50% + 70px); width: 75px; height: 75px; border-color: #00ff00; }
+        .bingkai-slot[data-rank="5"] { top: 145px; left: calc(50% - 40px); width: 80px; height: 80px; border-color: #ffff00; }
+        .bingkai-slot[data-rank="6"] { top: 130px; left: calc(50% - 145px); width: 75px; height: 75px; border-color: #ff0000; }
 
-        .bingkai-name {
-            position: absolute;
-            bottom: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 11px;
+        /* GARIS PEMBATAS TENGAH */
+        #mid-line {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffcc, transparent);
+            box-shadow: 0 0 10px #00ffcc;
+            z-index: 10;
+        }
+
+        /* --- KODE ASLI ABANG (POTO MELAYANG) --- */
+        #open-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: #00ffcc;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            z-index: 2000;
+        }
+
+        #settings-panel {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 200px;
+            background: rgba(25, 25, 25, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 12px;
             color: white;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
-            white-space: nowrap;
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
-        /* KODE ASLI ABANG - JANGAN DIUBAH */
-        .photo-el { 
-            position: absolute; 
-            background-size: cover; 
-            background-position: center; 
-            border-radius: 50%; 
-            pointer-events: none; 
-            transition: opacity 0.5s; 
-            z-index: 50;
-            border: 4px solid transparent;
-            background-clip: padding-box;
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
-        }
-
-        @keyframes fire-glow {
-            0% { box-shadow: 0 0 20px #ff4500, 0 0 40px #ff8c00; border-color: #ff4500; transform: scale(1); filter: brightness(1.2); }
-            50% { box-shadow: 0 0 40px #ff0000, 0 0 70px #ff4500; border-color: #ff0000; transform: scale(1.05); filter: brightness(1.5); }
-            100% { box-shadow: 0 0 20px #ff4500, 0 0 40px #ff8c00; border-color: #ff4500; transform: scale(1); filter: brightness(1.2); }
-        }
-
-        @keyframes neon-rotate {
-            0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px #00fff2; }
-            50% { box-shadow: 0 0 20px #ff00ff; }
-            100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px #00fff2; }
-        }
-
-        @keyframes mega-glow {
-            0% { transform: scale(1); box-shadow: 0 0 25px gold; border-color: gold; }
-            50% { transform: scale(1.1); box-shadow: 0 0 50px #ff4500; border-color: #ff4500; }
-            100% { transform: scale(1); box-shadow: 0 0 25px gold; border-color: gold; }
-        }
-
-        @keyframes gift-glow {
-            0% { box-shadow: 0 0 15px #ff0055; border-color: #ff0055; }
-            50% { box-shadow: 0 0 35px #ff0055; border-color: #fff; }
-            100% { box-shadow: 0 0 15px #ff0055; border-color: #ff0055; }
-        }
-
-        .nama-user-tiktok {
+        .photo-el {
             position: absolute;
-            bottom: -28px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
-            white-space: nowrap;
-            z-index: 999;
-            transition: font-size 0.3s;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid white;
+            pointer-events: none;
+            left: 0;
+            top: 0;
+            z-index: 50; /* Di bawah bingkai */
+            transition: border-radius 0.3s ease, opacity 0.5s ease;
         }
 
-        input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
-        label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
-        button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 5px; border-radius: 5px; }
-        .btn-paket { background: #28a745; color: white; font-size: 12px; margin-top: 5px; text-align: left; padding: 12px; }
-        .price { float: right; font-weight: bold; }
+        .hidden { display: none !important; }
+        h3 { margin: 0 0 10px 0; font-size: 13px; color: #00ffcc; text-align: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        label { font-size: 11px; display: block; margin-bottom: 4px; color: #bbb; }
+        input[type="range"], select { width: 100%; margin-bottom: 12px; background: #333; color: white; border: none; padding: 5px; border-radius: 4px; }
+        .btn-hide { width: 100%; padding: 8px; background: #ff4d4d; border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
+    <div id="mid-line"></div>
+
     <div id="leaderboard-frame">
-        <div id="rank1" class="bingkai-slot hidden" data-rank="1"><div class="bingkai-name"></div></div>
-        <div id="rank2" class="bingkai-slot hidden" data-rank="2"><div class="bingkai-name"></div></div>
-        <div id="rank3" class="bingkai-slot hidden" data-rank="3"><div class="bingkai-name"></div></div>
-        <div id="rank4" class="bingkai-slot hidden" data-rank="4"><div class="bingkai-name"></div></div>
-        <div id="rank5" class="bingkai-slot hidden" data-rank="5"><div class="bingkai-name"></div></div>
-        <div id="rank6" class="bingkai-slot hidden" data-rank="6"><div class="bingkai-name"></div></div>
+        <div id="https://i.ibb.co.com/Xr60g95B/download-5.jpg" class="bingkai-slot" data-rank="1"></div>
+        <div id="https://i.ibb.co.com/Xr60g95B/download-5.jpg" class="bingkai-slot" data-rank="2"></div>
+        <div id="https://i.ibb.co.com/Xr60g95B/download-5.jpg" class="bingkai-slot" data-rank="3"></div>
+        <div id="https://i.ibb.co.com/Xr60g95B/download-5.jpg" class="bingkai-slot" data-rank="4"></div>
+        <div id="https://i.ibb.co.com/Xr60g95B/download-5.jpg" class="bingkai-slot" data-rank="5"></div>
+        <div id="https://i.ibb.co.com/Xr60g95B/download-5.jpg" class="bingkai-slot" data-rank="6"></div>
     </div>
 
-    <div id="pay-modal" class="hidden">
-        <div class="box">
-            <h3 style="color:red; margin:0;">Limit Habis!</h3>
-            <p style="font-size:12px; margin-bottom:10px;">Pilih paket untuk melanjutkan:</p>
-            <button class="btn-paket" onclick="beli('Satu Hari', '11.000')">Paket 1 Hari <span class="price">11rb</span></button>
-            <button class="btn-paket" onclick="beli('Satu Minggu', '65.000')">Paket 1 Minggu <span class="price">65rb</span></button>
-            <button class="btn-paket" onclick="beli('Dua Minggu', '50.000')">Paket 2 Minggu <span class="price">50rb</span></button>
-            <button class="btn-paket" onclick="beli('Satu Bulan', '100.000')">Paket 1 Bulan <span class="price">100rb</span></button>
-            <button class="btn-paket" onclick="beli('Selamanya', '18.900')" style="background:#6f42c1;">Paket Selamanya <span class="price">18.9rb</span></button>
-            <button onclick="location.reload()" style="background:#eee; color:black; font-size:10px;">TUTUP</button>
-        </div>
-    </div>
+    <button id="open-btn" onclick="togglePanel(true)">⚙️</button>
 
-    <div id="auth-container">
-        <div class="box" id="login-form">
-            <h3>Masuk Akun</h3>
-            <input type="email" id="l-email" placeholder="Email">
-            <input type="password" id="l-pass" placeholder="Password">
-            <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
-            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="showReg()">Daftar</a></p>
-        </div>
-        <div class="box hidden" id="register-form">
-            <h3>Daftar Baru</h3>
-            <input type="text" id="r-tiktok" placeholder="Username TikTok">
-            <input type="email" id="r-email" placeholder="Email">
-            <input type="password" id="r-pass" placeholder="Password">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
-            <p style="font-size:12px"><a href="#" onclick="showLogin()">Balik Login</a></p>
-        </div>
-    </div>
-
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
-    
-    <div id="menu" class="hidden">
-        <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
-        <label>Username TikTok Target:</label>
-        <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
-        <label>Jika Ada Gift Rose Jadi:</label>
-        <select id="morphRose">
-            <option value="none">Foto Profil Asli</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/1998/1998614.png"> Jadi Beruang</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing lucu</option>
-            <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Biaya</option>
-            <option value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi ciktak</option>
-            <option value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang utan</option>
-            <option value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi ikan mas</option>
+    <div id="settings-panel">
+        <h3>⚙️ PENGATURAN</h3>
+        <label>Bentuk Foto</label>
+        <select id="shapeCtrl">
+            <option value="50%">Bulat (Bubble)</option>
+            <option value="0%">Kotak (Persegi)</option>
+            <option value="20px">Rounded</option>
         </select>
-        <label>Ukuran Foto (Pixel):</label>
-        <input type="range" id="sizeIn" min="40" max="250" value="100">
-        <label>Lama Melayang (Detik):</label>
-        <input type="number" id="timeIn" value="10">
-        <div class="switch-box">
-            <span>🔊 Suara Google (TTS)</span>
-            <input type="checkbox" id="ttsOn" style="width:20px" checked>
-        </div>
-        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
-        <button onclick="auth.signOut(); location.reload();" style="background:#dc3545; color:white; font-size:10px; padding:5px;">Logout Akun</button>
+        <label>Ukuran</label>
+        <input type="range" id="sizeCtrl" min="40" max="180" value="80">
+        <label>Kecepatan Gerak</label>
+        <input type="range" id="speedCtrl" min="0" max="10" value="3">
+        <label>Waktu Hilang (Detik)</label>
+        <input type="range" id="timerCtrl" min="1" max="20" value="10">
+        <span id="timerVal" style="font-size: 10px; display: block; margin-top: -10px; margin-bottom: 10px; text-align: right;">10s</span>
+        <button class="btn-hide" onclick="togglePanel(false)">Tutup Pengaturan</button>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", authDomain: "sos-pro-cd66d.firebaseapp.com", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com", projectId: "sos-pro-cd66d", storageBucket: "sos-pro-cd66d.appspot.com", messagingSenderId: "879343847954", appId: "1:879343847954:web:cc0b959202055fc252e6cb" };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.database();
-        const socket = io();
+        let photos = [];
+        const panel = document.getElementById('settings-panel');
+        const openBtn = document.getElementById('open-btn');
+        const timerCtrl = document.getElementById('timerCtrl');
+        const timerVal = document.getElementById('timerVal');
 
-        let useCount = 0;
-        let isPremium = false;
-        let registeredEmail = "";
-        let gifterList = []; // Untuk data bingkai
-
-        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
-        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
-
-        function beli(namaPaket, harga) {
-            const pesan = `Halo Bang, saya mau beli Paket ${namaPaket} (Rp ${harga}).%0AEmail Saya: ${registeredEmail}`;
-            window.open(`https://wa.me/6283815564900?text=${pesan}`, '_blank');
+        function togglePanel(show) {
+            panel.style.display = show ? 'block' : 'none';
+            openBtn.style.display = show ? 'none' : 'block';
         }
 
-        function register() {
-            const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
-            auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free', isOnline: false, lastActive: 'Baru Daftar' });
-            }).catch(err => alert(err.message));
+        timerCtrl.oninput = () => { timerVal.innerText = timerCtrl.value + "s"; };
+
+        function createPhoto() {
+            const id = Date.now() + Math.random();
+            const size = parseInt(document.getElementById('sizeCtrl').value);
+            
+            // Spawn hanya di area atas (0 sampai 50% layar)
+            const p = {
+                id: id,
+                el: document.createElement('div'),
+                x: Math.random() * (window.innerWidth - size),
+                y: Math.random() * (window.innerHeight * 0.4), // Muncul di atas
+                dx: (Math.random() - 0.5) * 2,
+                dy: (Math.random() - 0.5) * 2,
+                spawnTime: Date.now()
+            };
+
+            p.el.className = 'photo-el';
+            // Gunakan placeholder profil jika aslinya kosong
+            p.el.style.backgroundImage = `url('https://picsum.photos/200?random=${id}')`;
+            document.body.appendChild(p.el);
+            photos.push(p);
         }
 
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error Login!")); }
+        // Interval dipercepat agar terlihat ramai
+        setInterval(() => {
+            if (photos.length < 15) createPhoto();
+        }, 1500);
 
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                registeredEmail = user.email;
-                db.ref('users/' + user.uid).update({ isOnline: true, lastActive: new Date().toLocaleString('id-ID') });
-                db.ref('users/' + user.uid).onDisconnect().update({ isOnline: false });
-                db.ref('users/' + user.uid).on('value', snap => {
-                    const data = snap.val();
-                    if (!data) return;
-                    document.getElementById('auth-container').classList.add('hidden');
-                    document.getElementById('btnT').classList.remove('hidden');
-                    document.getElementById('userIn').value = data.tiktokUser;
-                    if(data.status === 'premium' || data.status === 'Premium') isPremium = true;
-                });
-            } else { document.getElementById('auth-container').classList.remove('hidden'); }
-        });
+        function animate() {
+            const size = parseInt(document.getElementById('sizeCtrl').value);
+            const speed = parseFloat(document.getElementById('speedCtrl').value);
+            const shape = document.getElementById('shapeCtrl').value;
+            const lifeSpan = parseInt(timerCtrl.value) * 1000;
 
-        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
+            const winW = window.innerWidth;
+            const winH_Mid = window.innerHeight / 2; // BATAS GARIS TENGAH
+            const now = Date.now();
 
-        function speak(text) {
-            if (!document.getElementById('ttsOn').checked) return;
-            window.speechSynthesis.cancel();
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = 'id-ID';
-            window.speechSynthesis.speak(ut);
-        }
+            for (let i = photos.length - 1; i >= 0; i--) {
+                let p = photos[i];
 
-        function konek() {
-            const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value, time: document.getElementById('timeIn').value, morph: document.getElementById('morphRose').value };
-            socket.emit('setTarget', config);
-            toggleMenu();
-            speak("Menghubungkan ke " + config.user);
-        }
-
-        // LOGIKA BARU: UPDATE BINGKAI LEADERBOARD
-        function handleLeaderboard(data) {
-            if (!data.diamondCount || data.diamondCount <= 0) return;
-
-            let existing = gifterList.find(g => g.nickname === data.nickname);
-            if (existing) {
-                existing.coins += data.diamondCount;
-            } else {
-                gifterList.push({ nickname: data.nickname, url: data.url, coins: data.diamondCount });
-            }
-
-            // Sortir koin paling besar ke atas
-            gifterList.sort((a, b) => b.coins - a.coins);
-
-            // Update Tampilan 6 Bingkai
-            for (let i = 1; i <= 6; i++) {
-                let slot = document.getElementById('rank' + i);
-                let gData = gifterList[i - 1];
-
-                if (gData) {
-                    slot.style.backgroundImage = `url('${gData.url}')`;
-                    slot.querySelector('.bingkai-name').innerText = gData.nickname;
-                    slot.classList.remove('hidden');
-                } else {
-                    slot.classList.add('hidden');
+                if (now - p.spawnTime > lifeSpan) {
+                    p.el.style.opacity = '0';
+                    setTimeout(() => { if (p.el.parentNode) p.el.remove(); }, 500);
+                    photos.splice(i, 1);
+                    continue;
                 }
+
+                p.el.style.width = size + 'px';
+                p.el.style.height = size + 'px';
+                p.el.style.borderRadius = shape;
+
+                p.x += p.dx * speed;
+                p.y += p.dy * speed;
+
+                // --- PANTULAN DENGAN BATAS GARIS TENGAH ---
+                if (p.x + size > winW) { p.x = winW - size; p.dx *= -1; }
+                else if (p.x < 0) { p.x = 0; p.dx *= -1; }
+
+                // Batas Atas (0) dan Batas Bawah (Garis Tengah)
+                if (p.y + size > winH_Mid) { p.y = winH_Mid - size; p.dy *= -1; }
+                else if (p.y < 0) { p.y = 0; p.dy *= -1; }
+
+                p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
             }
+            requestAnimationFrame(animate);
         }
 
-        // KODE ASLI ABANG (TIDAK ADA PERUBAHAN LOGIKA)
-        function buatFotoMelayang(data) {
-            if (!isPremium && useCount >= 10) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
-            useCount++;
-            
-            const el = document.createElement('div');
-            el.className = 'photo-el';
-            
-            let imgUrl = data.url;
-            if (data.giftName === 'Rose' && data.config.morph !== 'none') imgUrl = data.config.morph;
-            el.style.backgroundImage = `url('${imgUrl}')`;
-
-            const labelNama = document.createElement('div');
-            labelNama.className = 'nama-user-tiktok';
-            labelNama.innerText = data.nickname || "User";
-            const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF', '#00FF7F'];
-            labelNama.style.color = warnaWarni[Math.floor(Math.random() * warnaWarni.length)];
-            el.appendChild(labelNama);
-
-            const baseSize = parseInt(data.config.size);
-            const coins = data.diamondCount || 0;
-            let finalSize = baseSize;
-            let fontSize = 14;
-
-            if (coins >= 500) { 
-                finalSize = baseSize + 100; fontSize = 24; 
-                el.style.animation = "fire-glow 0.5s infinite alternate"; 
-                el.style.border = "8px solid #ff4500";
-            } else if (coins >= 100) { 
-                finalSize = baseSize + 50; fontSize = 20; 
-                el.style.animation = "mega-glow 0.8s infinite ease-in-out";
-                el.style.border = "6px solid gold";
-            } else if (coins >= 1) { 
-                finalSize = baseSize + 20; fontSize = 16; 
-                el.style.animation = "gift-glow 1s infinite";
-                el.style.border = "4px solid #ff0055";
-            } else { 
-                el.style.animation = "neon-rotate 3s infinite linear";
-                el.style.border = "3px solid white";
-            }
-
-            el.style.width = finalSize + 'px'; 
-            el.style.height = finalSize + 'px';
-            labelNama.style.fontSize = fontSize + 'px';
-
-            document.body.appendChild(el);
-            
-            let posX = Math.random() * (window.innerWidth - finalSize);
-            let posY = Math.random() * (window.innerHeight - finalSize);
-            let velX = (Math.random() - 0.5) * 8;
-            let velY = (Math.random() - 0.5) * 8;
-            
-            function move() {
-                if (!el.parentElement) return;
-                posX += velX; posY += velY;
-                if (posX <= 0 || posX >= window.innerWidth - finalSize) velX *= -1;
-                if (posY <= 0 || posY >= window.innerHeight - finalSize) velY *= -1;
-                el.style.left = posX + 'px'; el.style.top = posY + 'px';
-                requestAnimationFrame(move);
-            }
-            move();
-
-            setTimeout(() => { 
-                el.style.opacity = '0';
-                setTimeout(() => el.remove(), 500);
-            }, data.config.time * 1000);
-        }
-
-        socket.on('munculFoto', (data) => {
-            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
-            buatFotoMelayang(data);
-            handleLeaderboard(data); // Fungsi tambahan untuk bingkai
-        });
-
-        socket.on('memberJoin', (data) => {
-            speak(`Selamat datang ${data.nickname}`);
-            buatFotoMelayang(data);
-        });
-
-        socket.on('chat', (data) => { speak(`${data.nickname} bilang: ${data.comment}`); });
+        for(let i=0; i<5; i++) createPhoto();
+        animate();
     </script>
 </body>
 </html>
