@@ -146,7 +146,7 @@
         let useCount = 0;
         let isPremium = false;
         let registeredEmail = "";
-        let activeProfiles = {}; // Menyimpan elemen profil yang sedang tampil
+        let activeProfiles = {}; 
 
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
@@ -198,9 +198,20 @@
             speak("Menghubungkan ke " + config.user);
         }
 
-        // FUNGSI UNTUK MEMUNCULKAN PROFIL
+        // FUNGSI UTAMA SPAWN PROFIL (LANGSUNG KONEK)
         function spawnProfile(data) {
-            if (activeProfiles[data.uniqueId]) return; // Jika sudah ada, jangan buat lagi
+            // Jika ID User sudah ada di layar, jangan bikin duplikat, cukup update animasinya jika perlu
+            if (activeProfiles[data.uniqueId]) {
+                const existingEl = activeProfiles[data.uniqueId];
+                if (data.diamondCount >= 100) {
+                    existingEl.style.animation = "mega-glow 0.8s infinite ease-in-out";
+                    existingEl.style.border = "6px solid gold";
+                } else if (data.diamondCount >= 1) {
+                    existingEl.style.animation = "gift-glow 1s infinite";
+                    existingEl.style.border = "4px solid #ff0055";
+                }
+                return;
+            }
 
             if (!isPremium && useCount >= 10) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
             useCount++;
@@ -208,36 +219,37 @@
             const el = document.createElement('div');
             el.className = 'photo-el';
             
+            // Pilih foto profil asli atau morph
             let imgUrl = data.profilePictureUrl || data.url;
-            if (data.giftName === 'Rose' && data.config && data.config.morph !== 'none') imgUrl = data.config.morph;
+            const morphVal = document.getElementById('morphRose').value;
+            if (data.giftName === 'Rose' && morphVal !== 'none') imgUrl = morphVal;
             el.style.backgroundImage = `url('${imgUrl}')`;
 
             const labelNama = document.createElement('div');
             labelNama.className = 'nama-user-tiktok';
-            labelNama.innerText = data.nickname || "User";
+            labelNama.innerText = data.nickname || data.uniqueId || "User";
             const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF', '#00FF7F'];
             labelNama.style.color = warnaWarni[Math.floor(Math.random() * warnaWarni.length)];
             el.appendChild(labelNama);
 
             const sizeNum = parseInt(document.getElementById('sizeIn').value);
+            el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
             
-            // Logika Animasi
+            // Logika Animasi Awal
             if (data.diamondCount && data.diamondCount >= 100) {
                 el.style.width = (sizeNum + 40) + 'px'; el.style.height = (sizeNum + 40) + 'px';
                 el.style.animation = "mega-glow 0.8s infinite ease-in-out";
                 el.style.border = "6px solid gold";
             } else if (data.diamondCount && data.diamondCount >= 1) {
-                el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
                 el.style.animation = "gift-glow 1s infinite";
                 el.style.border = "4px solid #ff0055";
             } else {
-                el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
                 el.style.animation = "neon-rotate 3s infinite linear";
                 el.style.border = "3px solid white";
             }
 
             document.body.appendChild(el);
-            activeProfiles[data.uniqueId] = el; // Simpan ke daftar aktif
+            activeProfiles[data.uniqueId] = el; 
             
             let posX = Math.random() * (window.innerWidth - sizeNum);
             let posY = Math.random() * (window.innerHeight - sizeNum);
@@ -255,31 +267,43 @@
             move();
         }
 
-        // EVENT JOIN: Tampilkan Profil
+        // --- REAL-TIME EVENT HANDLERS ---
+
+        // Join: Langsung muncul
         socket.on('memberJoin', (data) => {
             spawnProfile(data);
         });
 
-        // EVENT LEAVE: Hapus Profil
+        // Leave: Langsung hilang
         socket.on('memberLeave', (data) => {
             if (activeProfiles[data.uniqueId]) {
-                activeProfiles[data.uniqueId].style.opacity = '0';
+                const el = activeProfiles[data.uniqueId];
+                el.style.opacity = '0';
                 setTimeout(() => {
-                    if (activeProfiles[data.uniqueId]) {
-                        activeProfiles[data.uniqueId].remove();
-                        delete activeProfiles[data.uniqueId];
-                    }
+                    el.remove();
+                    delete activeProfiles[data.uniqueId];
                 }, 500);
             }
         });
 
-        // TETAP AKTIF UNTUK GIFT
+        // Gift: Muncul/Update
         socket.on('munculFoto', (data) => {
             spawnProfile(data);
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
         });
 
-        socket.on('chat', (data) => { speak(`${data.nickname} bilang: ${data.comment}`); });
+        // Chat, Like, Share: Pastikan user muncul & stay di layar
+        socket.on('chat', (data) => { 
+            spawnProfile(data);
+            speak(`${data.nickname} bilang: ${data.comment}`); 
+        });
+
+        socket.on('like', (data) => { spawnProfile(data); });
+        socket.on('share', (data) => { 
+            spawnProfile(data);
+            speak(`Terima kasih ${data.nickname} sudah share`); 
+        });
+
     </script>
 </body>
 </html>
