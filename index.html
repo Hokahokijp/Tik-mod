@@ -109,31 +109,58 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", authDomain: "sos-pro-cd66d.firebaseapp.com", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com", projectId: "sos-pro-cd66d", storageBucket: "sos-pro-cd66d.appspot.com", messagingSenderId: "879343847954", appId: "1:879343847954:web:cc0b959202055fc252e6cb" };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
+            authDomain: "sos-pro-cd66d.firebaseapp.com",
+            databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
+            projectId: "sos-pro-cd66d",
+            storageBucket: "sos-pro-cd66d.appspot.com",
+            messagingSenderId: "879343847954",
+            appId: "1:879343847954:web:cc0b959202055fc252e6cb"
+        };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
         const socket = io();
 
-        let useCount = 0, isPremium = false;
-        const activeUsers = {}; // DAFTAR USER AKTIF
+        let useCount = 0;
+        let isPremium = false;
+        let registeredEmail = "";
+        const activeUsers = {}; // UNTUK MENCEGAH DUPLIKAT FOTO
+
+        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
+        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
+
+        function beli(namaPaket, harga) {
+            const pesan = `Halo Bang, saya mau beli Paket ${namaPaket} (Rp ${harga}).%0AEmail Saya: ${registeredEmail}`;
+            window.open(`https://wa.me/6283815564900?text=${pesan}`, '_blank');
+        }
+
+        function register() {
+            const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
+            auth.createUserWithEmailAndPassword(e, p).then(u => {
+                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free', isOnline: false, lastActive: 'Baru Daftar' });
+            }).catch(err => alert(err.message));
+        }
+
+        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error Login!")); }
 
         auth.onAuthStateChanged(user => {
             if (user) {
+                registeredEmail = user.email;
+                db.ref('users/' + user.uid).update({ isOnline: true, lastActive: new Date().toLocaleString('id-ID') });
+                db.ref('users/' + user.uid).onDisconnect().update({ isOnline: false });
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
                     if (!data) return;
                     document.getElementById('auth-container').classList.add('hidden');
                     document.getElementById('btnT').classList.remove('hidden');
                     document.getElementById('userIn').value = data.tiktokUser;
-                    if(data.status?.toLowerCase() === 'premium') isPremium = true;
+                    if(data.status === 'premium' || data.status === 'Premium') isPremium = true;
                 });
             } else { document.getElementById('auth-container').classList.remove('hidden'); }
         });
 
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(e => alert(e.message)); }
-        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
-        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
 
         function speak(text) {
@@ -145,70 +172,77 @@
         }
 
         function konek() {
-            const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value };
+            const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value, time: document.getElementById('timeIn').value, morph: document.getElementById('morphRose').value };
             socket.emit('setTarget', config);
             toggleMenu();
             speak("Menghubungkan ke " + config.user);
         }
 
-        // --- LOGIKA UTAMA TAMPILAN ---
-
-        socket.on('munculFoto', (data) => handleUserDisplay(data));
-        socket.on('userJoin', (data) => handleUserDisplay(data));
-
-        function handleUserDisplay(data) {
+        socket.on('munculFoto', (data) => {
             const userId = data.userId || data.nickname;
 
-            // CEK: Jika user sudah ada di layar, jangan buat baru. Update saja animasinya.
+            // CEK: Jika user sudah ada di layar, jangan buat baru, cukup update animasinya
             if (activeUsers[userId]) {
-                updateAnimation(activeUsers[userId], data);
+                const existingEl = activeUsers[userId];
+                applyStyles(existingEl, data);
                 if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
-                return; 
+                return;
             }
 
-            // Batasan Limit Free
-            if (!isPremium && useCount >= 50) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
+            if (!isPremium && useCount >= 10) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
             useCount++;
-
-            // Buat element baru karena user belum ada di layar
+            
             const el = document.createElement('div');
             el.className = 'photo-el';
-            el.id = 'user-' + userId;
-            el.style.backgroundImage = `url('${data.url}')`;
+            
+            let imgUrl = data.url;
+            if (data.giftName === 'Rose' && data.config.morph !== 'none') imgUrl = data.config.morph;
+            el.style.backgroundImage = `url('${imgUrl}')`;
 
             const labelNama = document.createElement('div');
             labelNama.className = 'nama-user-tiktok';
             labelNama.innerText = data.nickname || "User";
-            const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF'];
+            const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF', '#00FF7F'];
             labelNama.style.color = warnaWarni[Math.floor(Math.random() * warnaWarni.length)];
             el.appendChild(labelNama);
 
-            updateAnimation(el, data);
+            applyStyles(el, data);
+
             document.body.appendChild(el);
-            
-            // Simpan referensi elemen ke dalam daftar aktif
-            activeUsers[userId] = el;
+            activeUsers[userId] = el; // Simpan ke daftar aktif
 
-            startFloating(el, parseInt(data.config.size));
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
-        }
+            
+            let posX = Math.random() * (window.innerWidth - parseInt(data.config.size));
+            let posY = Math.random() * (window.innerHeight - parseInt(data.config.size));
+            let velX = (Math.random() - 0.5) * 8;
+            let velY = (Math.random() - 0.5) * 8;
+            
+            function move() {
+                if (!el.parentElement) return;
+                posX += velX; posY += velY;
+                if (posX <= 0 || posX >= window.innerWidth - parseInt(el.style.width)) velX *= -1;
+                if (posY <= 0 || posY >= window.innerHeight - parseInt(el.style.height)) velY *= -1;
+                el.style.left = posX + 'px'; el.style.top = posY + 'px';
+                requestAnimationFrame(move);
+            }
+            move();
 
-        socket.on('userLeave', (data) => {
-            const el = document.getElementById('user-' + data.userId);
-            if (el) {
+            // Hapus setelah waktu habis
+            setTimeout(() => { 
                 el.style.opacity = '0';
                 setTimeout(() => {
                     el.remove();
-                    delete activeUsers[data.userId];
+                    delete activeUsers[userId]; // Hapus dari daftar aktif agar bisa muncul lagi nanti
                 }, 500);
-            }
+            }, data.config.time * 1000);
         });
 
-        function updateAnimation(el, data) {
+        // Fungsi bantuan untuk update gaya tanpa bikin elemen baru
+        function applyStyles(el, data) {
             const sizeNum = parseInt(data.config.size);
             if (data.diamondCount >= 100) {
-                el.style.width = (sizeNum + 40) + 'px'; 
-                el.style.height = (sizeNum + 40) + 'px';
+                el.style.width = (sizeNum + 40) + 'px'; el.style.height = (sizeNum + 40) + 'px';
                 el.style.animation = "mega-glow 0.8s infinite ease-in-out";
                 el.style.border = "6px solid gold";
             } else if (data.diamondCount >= 1) {
@@ -220,23 +254,6 @@
                 el.style.animation = "neon-rotate 3s infinite linear";
                 el.style.border = "3px solid white";
             }
-        }
-
-        function startFloating(el, size) {
-            let posX = Math.random() * (window.innerWidth - size);
-            let posY = Math.random() * (window.innerHeight - size);
-            let velX = (Math.random() - 0.5) * 4;
-            let velY = (Math.random() - 0.5) * 4;
-
-            function move() {
-                if (!el.parentElement) return;
-                posX += velX; posY += velY;
-                if (posX <= 0 || posX >= window.innerWidth - size) velX *= -1;
-                if (posY <= 0 || posY >= window.innerHeight - size) velY *= -1;
-                el.style.left = posX + 'px'; el.style.top = posY + 'px';
-                requestAnimationFrame(move);
-            }
-            move();
         }
 
         socket.on('chat', (data) => { speak(`${data.nickname} bilang: ${data.comment}`); });
