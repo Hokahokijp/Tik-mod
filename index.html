@@ -116,7 +116,7 @@
         const socket = io();
 
         let useCount = 0, isPremium = false;
-        const activeUsers = {}; // DAFTAR USER DI LAYAR
+        const activeUsers = {}; // DAFTAR USER AKTIF
 
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -157,19 +157,20 @@
         socket.on('userJoin', (data) => handleUserDisplay(data));
 
         function handleUserDisplay(data) {
-            if (!isPremium && useCount >= 50) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
-            useCount++;
-
             const userId = data.userId || data.nickname;
 
-            // Jika user sudah ada, update saja animasinya
+            // CEK: Jika user sudah ada di layar, jangan buat baru. Update saja animasinya.
             if (activeUsers[userId]) {
                 updateAnimation(activeUsers[userId], data);
                 if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
-                return;
+                return; 
             }
 
-            // Buat element baru
+            // Batasan Limit Free
+            if (!isPremium && useCount >= 50) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
+            useCount++;
+
+            // Buat element baru karena user belum ada di layar
             const el = document.createElement('div');
             el.className = 'photo-el';
             el.id = 'user-' + userId;
@@ -184,6 +185,8 @@
 
             updateAnimation(el, data);
             document.body.appendChild(el);
+            
+            // Simpan referensi elemen ke dalam daftar aktif
             activeUsers[userId] = el;
 
             startFloating(el, parseInt(data.config.size));
