@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v2.2</title>
+    <title>TikTok Overlay Premium v2.1</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -14,38 +14,42 @@
         #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
         .hidden { display: none !important; }
         
-        /* CSS FOTO MELAYANG */
+        /* CSS FOTO MELAYANG & ANIMASI */
         .photo-el { 
             position: absolute; 
             background-size: cover; 
             background-position: center; 
             border-radius: 50%; 
             pointer-events: none; 
-            transition: opacity 0.5s, width 0.3s, height 0.3s; 
+            transition: opacity 0.5s; 
             z-index: 50;
             border: 4px solid transparent;
             background-clip: padding-box;
             box-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
 
+        /* ANIMASI RING BERPUTAR UNTUK SEMUA USER (CHAT/LIKE) */
         @keyframes neon-rotate {
             0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px #00fff2; }
             50% { box-shadow: 0 0 20px #ff00ff; }
             100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px #00fff2; }
         }
 
+        /* ANIMASI LEDAKAN UNTUK GIFT MEWAH (100+ COIN) */
         @keyframes mega-glow {
             0% { transform: scale(1); box-shadow: 0 0 25px gold; border-color: gold; }
             50% { transform: scale(1.1); box-shadow: 0 0 50px #ff4500; border-color: #ff4500; }
             100% { transform: scale(1); box-shadow: 0 0 25px gold; border-color: gold; }
         }
 
+        /* ANIMASI UNTUK GIFT BIASA (1-99 COIN) */
         @keyframes gift-glow {
             0% { box-shadow: 0 0 15px #ff0055; border-color: #ff0055; }
             50% { box-shadow: 0 0 35px #ff0055; border-color: #fff; }
             100% { box-shadow: 0 0 15px #ff0055; border-color: #ff0055; }
         }
 
+        /* LABEL NAMA DI BAWAH FOTO */
         .nama-user-tiktok {
             position: absolute;
             bottom: -28px;
@@ -61,6 +65,10 @@
         input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
         label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
+        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 5px; border-radius: 5px; }
+        
+        .btn-paket { background: #28a745; color: white; font-size: 12px; margin-top: 5px; text-align: left; padding: 12px; }
+        .price { float: right; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -68,7 +76,12 @@
     <div id="pay-modal" class="hidden">
         <div class="box">
             <h3 style="color:red; margin:0;">Limit Habis!</h3>
-            <button onclick="beli('Selamanya', '18.900')" style="background:#6f42c1; color:white;">Beli Paket Selamanya</button>
+            <p style="font-size:12px; margin-bottom:10px;">Pilih paket untuk melanjutkan:</p>
+            <button class="btn-paket" onclick="beli('Satu Hari', '11.000')">Paket 1 Hari <span class="price">11rb</span></button>
+            <button class="btn-paket" onclick="beli('Satu Minggu', '65.000')">Paket 1 Minggu <span class="price">65rb</span></button>
+            <button class="btn-paket" onclick="beli('Dua Minggu', '50.000')">Paket 2 Minggu <span class="price">50rb</span></button>
+            <button class="btn-paket" onclick="beli('Satu Bulan', '100.000')">Paket 1 Bulan <span class="price">100rb</span></button>
+            <button class="btn-paket" onclick="beli('Selamanya', '18.900')" style="background:#6f42c1;">Paket Selamanya <span class="price">18.9rb</span></button>
             <button onclick="location.reload()" style="background:#eee; color:black; font-size:10px;">TUTUP</button>
         </div>
     </div>
@@ -97,14 +110,27 @@
         <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
         <label>Username TikTok Target:</label>
         <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
-        <label>Ukuran Dasar (Pixel):</label>
-        <input type="range" id="sizeIn" min="40" max="200" value="80">
+        <label>Jika Ada Gift Rose Jadi:</label>
+        <select id="morphRose">
+            <option value="none">Foto Profil Asli</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/1998/1998614.png"> Jadi Beruang</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing lucu</option>
+            <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Biaya</option>
+            <option value="https://i.ibb.co.com/hJdZgZXb/download-1-removebg-preview.png"> Jadi ciktak</option>
+            <option value="https://i.ibb.co.com/NdrDQk22/images-removebg-preview.png"> Jadi Orang utan</option>
+            <option value="https://i.ibb.co.com/zVD6tDFV/download-2-removebg-preview.png"> Jadi ikan mas</option>
+        </select>
+        <label>Ukuran Foto (Pixel):</label>
+        <input type="range" id="sizeIn" min="40" max="250" value="100">
+        <label>Lama Melayang (Detik):</label>
+        <input type="number" id="timeIn" value="10">
         <div class="switch-box">
-            <span>🔊 TTS</span>
-            <input type="checkbox" id="ttsOn" checked>
+            <span>🔊 Suara Google (TTS)</span>
+            <input type="checkbox" id="ttsOn" style="width:20px" checked>
         </div>
-        <button onclick="konek()" style="background:#007bff; color:white;">KONEK SEKARANG</button>
-        <button onclick="auth.signOut(); location.reload();" style="font-size:10px;">Logout</button>
+        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
+        <button onclick="auth.signOut(); location.reload();" style="background:#dc3545; color:white; font-size:10px; padding:5px;">Logout Akun</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
