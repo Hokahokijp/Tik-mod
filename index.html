@@ -198,9 +198,7 @@
             speak("Menghubungkan ke " + config.user);
         }
 
-        // FUNGSI UTAMA SPAWN PROFIL (LANGSUNG KONEK)
         function spawnProfile(data) {
-            // Jika ID User sudah ada di layar, jangan bikin duplikat, cukup update animasinya jika perlu
             if (activeProfiles[data.uniqueId]) {
                 const existingEl = activeProfiles[data.uniqueId];
                 if (data.diamondCount >= 100) {
@@ -219,7 +217,6 @@
             const el = document.createElement('div');
             el.className = 'photo-el';
             
-            // Pilih foto profil asli atau morph
             let imgUrl = data.profilePictureUrl || data.url;
             const morphVal = document.getElementById('morphRose').value;
             if (data.giftName === 'Rose' && morphVal !== 'none') imgUrl = morphVal;
@@ -235,7 +232,6 @@
             const sizeNum = parseInt(document.getElementById('sizeIn').value);
             el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
             
-            // Logika Animasi Awal
             if (data.diamondCount && data.diamondCount >= 100) {
                 el.style.width = (sizeNum + 40) + 'px'; el.style.height = (sizeNum + 40) + 'px';
                 el.style.animation = "mega-glow 0.8s infinite ease-in-out";
@@ -267,32 +263,31 @@
             move();
         }
 
-        // --- REAL-TIME EVENT HANDLERS ---
+        // --- FIXED REAL-TIME EVENT HANDLERS ---
 
-        // Join: Langsung muncul
+        // Join: Muncul & Bacakan Nama
         socket.on('memberJoin', (data) => {
             spawnProfile(data);
+            speak(`${data.nickname || data.uniqueId} bergabung ke room`);
         });
 
-        // Leave: Langsung hilang
+        // Leave: Hapus Total dari DOM & Array
         socket.on('memberLeave', (data) => {
             if (activeProfiles[data.uniqueId]) {
                 const el = activeProfiles[data.uniqueId];
                 el.style.opacity = '0';
                 setTimeout(() => {
-                    el.remove();
+                    if(el.parentNode) el.parentNode.removeChild(el);
                     delete activeProfiles[data.uniqueId];
                 }, 500);
             }
         });
 
-        // Gift: Muncul/Update
         socket.on('munculFoto', (data) => {
             spawnProfile(data);
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
         });
 
-        // Chat, Like, Share: Pastikan user muncul & stay di layar
         socket.on('chat', (data) => { 
             spawnProfile(data);
             speak(`${data.nickname} bilang: ${data.comment}`); 
