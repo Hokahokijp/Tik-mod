@@ -3,185 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bubble & Square Photo Control - Race Edition</title>
+    <title>TikTok Live - Stay & Leave System</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
-            margin: 0; height: 100vh; background: #0f0f1a;
-            overflow: hidden; font-family: sans-serif; position: fixed; width: 100%;
+            margin: 0; height: 100vh; background: #050510;
+            overflow: hidden; font-family: 'Arial Black', sans-serif; color: white;
         }
 
-        /* --- BINGKAI / LINTASAN BALAP (AREA ATAS) --- */
-        #leaderboard-frame {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            width: 100%; height: 250px; z-index: 100; pointer-events: none;
+        /* --- AREA BINGKAI BALAP (ATAS) --- */
+        #race-track {
+            position: absolute; top: 0; width: 100%; height: 50%;
+            background: rgba(255,255,255,0.02); border-bottom: 3px solid #00ffcc;
         }
 
-        .bingkai-slot {
-            position: absolute; border-radius: 50%; background-size: cover;
-            background-position: center; border: 4px solid #fff;
-            box-shadow: 0 0 15px rgba(255,255,255,0.3);
-            transition: transform 0.2s linear; /* Biar gerak balapnya halus */
+        .slot-container {
+            position: absolute; width: 100px; height: 100px;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* Posisi Awal (Garis Start) */
-        .bingkai-slot[data-rank="1"] { top: 0; left: 20px; width: 100px; height: 100px; border-color: #ff00ff; }
-        .bingkai-slot[data-rank="2"] { top: 110px; left: 20px; width: 80px; height: 80px; border-color: #00ffff; }
-        .bingkai-slot[data-rank="3"] { top: 190px; left: 20px; width: 70px; height: 70px; border-color: #ff4500; }
-
-        #mid-line {
-            position: fixed; top: 50%; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, #00ffcc, transparent);
-            box-shadow: 0 0 10px #00ffcc; z-index: 10;
+        /* GAMBAR BINGKAI DARI LINK ABANG */
+        .frame-image {
+            position: absolute; width: 100%; height: 100%;
+            background-image: url('https://i.ibb.co.com/Xr60g95B/download-5.jpg');
+            background-size: contain; background-repeat: no-repeat;
+            z-index: 10;
         }
 
-        /* --- POTO MELAYANG (BAWAH) --- */
-        .photo-el {
-            position: absolute; background-size: cover; background-position: center;
-            border: 2px solid white; pointer-events: none; z-index: 50;
-            transition: border-radius 0.3s ease, opacity 0.5s ease;
+        .user-photo {
+            width: 70%; height: 70%; border-radius: 50%;
+            background-size: cover; background-position: center;
+            z-index: 5;
         }
 
-        #open-btn {
-            position: fixed; top: 15px; right: 15px; width: 40px; height: 40px;
-            background: #00ffcc; border: none; border-radius: 50%; cursor: pointer;
-            display: none; z-index: 2000;
+        .id-name {
+            position: absolute; bottom: -15px; font-size: 10px;
+            color: #00ffcc; white-space: nowrap; font-weight: bold;
         }
 
-        #settings-panel {
-            position: fixed; top: 15px; right: 15px; width: 200px;
-            background: rgba(25, 25, 25, 0.95); backdrop-filter: blur(10px);
-            padding: 15px; border-radius: 12px; color: white; z-index: 1000;
-            border: 1px solid rgba(255,255,255,0.2);
+        /* POSISI SLOT JALUR */
+        .slot-1 { top: 10px; left: 20px; }
+        .slot-2 { top: 100px; left: 20px; }
+        .slot-3 { top: 190px; left: 20px; }
+
+        /* --- AREA MELAYANG (BAWAH) --- */
+        #audience-area {
+            position: absolute; top: 50%; width: 100%; height: 50%;
         }
 
-        h3 { margin: 0 0 10px 0; font-size: 13px; color: #00ffcc; text-align: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
-        label { font-size: 11px; display: block; margin-bottom: 4px; color: #bbb; }
-        input[type="range"], select, input[type="text"] { width: 100%; margin-bottom: 12px; background: #333; color: white; border: none; padding: 5px; border-radius: 4px; }
-        .btn-hide { width: 100%; padding: 8px; background: #ff4d4d; border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-konek { width: 100%; padding: 8px; background: #007bff; border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 10px;}
+        .floating-user {
+            position: absolute; border: 2px solid #fff; border-radius: 50%;
+            background-size: cover; z-index: 50; transition: transform 0.1s linear;
+        }
     </style>
 </head>
 <body>
 
-    <div id="mid-line"></div>
-
-    <div id="leaderboard-frame">
-        <div id="racer-1" class="bingkai-slot" data-rank="1" style="display:none;"></div>
-        <div id="racer-2" class="bingkai-slot" data-rank="2" style="display:none;"></div>
-        <div id="racer-3" class="bingkai-slot" data-rank="3" style="display:none;"></div>
+    <div id="race-track">
+        <div id="lane-1" class="slot-container slot-1" style="display:none;">
+            <div class="frame-image"></div>
+            <div id="img-1" class="user-photo"></div>
+            <div id="name-1" class="id-name"></div>
+        </div>
+        <div id="lane-2" class="slot-container slot-2" style="display:none;">
+            <div class="frame-image"></div>
+            <div id="img-2" class="user-photo"></div>
+            <div id="name-2" class="id-name"></div>
+        </div>
+        <div id="lane-3" class="slot-container slot-3" style="display:none;">
+            <div class="frame-image"></div>
+            <div id="img-3" class="user-photo"></div>
+            <div id="name-3" class="id-name"></div>
+        </div>
     </div>
 
-    <button id="open-btn" onclick="togglePanel(true)">⚙️</button>
-
-    <div id="settings-panel">
-        <h3>⚙️ PENGATURAN</h3>
-        <input type="text" id="targetUser" placeholder="Username TikTok">
-        <button class="btn-konek" onclick="konekLive()">HUBUNGKAN LIVE</button>
-        
-        <label>Bentuk Foto</label>
-        <select id="shapeCtrl">
-            <option value="50%">Bulat (Bubble)</option>
-            <option value="0%">Kotak (Persegi)</option>
-        </select>
-        <label>Ukuran Melayang</label>
-        <input type="range" id="sizeCtrl" min="40" max="180" value="80">
-        <label>Kecepatan Gerak</label>
-        <input type="range" id="speedCtrl" min="0" max="10" value="3">
-        <label>Waktu Hilang (Detik)</label>
-        <input type="range" id="timerCtrl" min="1" max="20" value="10">
-        <button class="btn-hide" onclick="togglePanel(false)">Tutup Pengaturan</button>
-    </div>
+    <div id="audience-area"></div>
 
     <script>
         const socket = io();
-        let photos = [];
-        let pembalap = []; // Data pemain yang gift
-        const panel = document.getElementById('settings-panel');
-        const openBtn = document.getElementById('open-btn');
+        let activeUsers = {}; // Simpan data user yang lagi di room
+        let racers = []; // Data pemain di bingkai atas
 
-        function togglePanel(show) {
-            panel.style.display = show ? 'block' : 'none';
-            openBtn.style.display = show ? 'none' : 'block';
-        }
-
-        function konekLive() {
-            const user = document.getElementById('targetUser').value;
-            if(user) socket.emit('setTarget', { user: user });
-        }
-
-        // --- FITUR ASLI: JOIN/CHAT MELAYANG DI BAWAH ---
-        function createPhoto(data) {
-            const size = parseInt(document.getElementById('sizeCtrl').value);
-            const winH = window.innerHeight;
-            const p = {
-                id: Date.now() + Math.random(),
-                el: document.createElement('div'),
-                x: Math.random() * (window.innerWidth - size),
-                y: (winH * 0.55) + (Math.random() * (winH * 0.35)),
-                dx: (Math.random() - 0.5) * 2,
-                dy: (Math.random() - 0.5) * 2,
-                spawnTime: Date.now()
-            };
-            p.el.className = 'photo-el';
-            p.el.style.backgroundImage = `url('${data.profilePictureUrl || data.url || 'https://picsum.photos/200'}')`;
-            document.body.appendChild(p.el);
-            photos.push(p);
-        }
-
-        // --- FITUR BARU: GIFT MASUK BALAPAN (ATAS) ---
-        socket.on('munculFoto', (data) => {
-            let p = pembalap.find(x => x.id === data.uniqueId);
-            if (!p && pembalap.length < 3) { // Contoh 3 pembalap dulu biar gak penuh
-                const index = pembalap.length + 1;
-                const el = document.getElementById('racer-' + index);
-                el.style.backgroundImage = `url('${data.url}')`;
-                el.style.display = 'block';
+        // 1. KETIKA JOIN ROOM -> TAMPIL FOTO
+        socket.on('memberJoin', (data) => {
+            if (!activeUsers[data.uniqueId]) {
+                const el = document.createElement('div');
+                el.className = 'floating-user';
+                el.style.width = '60px'; el.style.height = '60px';
+                el.style.backgroundImage = `url('${data.profilePictureUrl}')`;
                 
-                p = { id: data.uniqueId, el: el, x: 0, speed: data.diamondCount * 2 };
-                pembalap.push(p);
-            } else if (p) {
-                p.speed += data.diamondCount * 3; // Tambah kencang kalau gift lagi
+                // Posisi awal acak di area bawah
+                const x = Math.random() * (window.innerWidth - 60);
+                const y = (window.innerHeight * 0.55) + (Math.random() * (window.innerHeight * 0.3));
+                
+                document.getElementById('audience-area').appendChild(el);
+                
+                activeUsers[data.uniqueId] = {
+                    el: el,
+                    x: x, y: y,
+                    dx: (Math.random() - 0.5) * 2,
+                    dy: (Math.random() - 0.5) * 2
+                };
             }
-            createPhoto(data); // Tetap munculin melayang juga
         });
 
-        socket.on('memberJoin', (data) => createPhoto(data));
-        socket.on('chat', (data) => createPhoto(data));
+        // 2. KETIKA LEAVE ROOM -> HAPUS FOTO
+        socket.on('memberLeave', (data) => {
+            if (activeUsers[data.uniqueId]) {
+                activeUsers[data.uniqueId].el.remove();
+                delete activeUsers[data.uniqueId];
+            }
+            // Jika dia ada di bingkai balap, kosongkan juga
+            const racerIdx = racers.findIndex(r => r.id === data.uniqueId);
+            if (racerIdx !== -1) {
+                const laneNum = racerIdx + 1;
+                document.getElementById('lane-' + laneNum).style.display = 'none';
+                racers.splice(racerIdx, 1);
+            }
+        });
 
+        // 3. JIKA GIFT -> MASUK BINGKAI & BALAP
+        socket.on('munculFoto', (data) => {
+            let p = racers.find(x => x.id === data.uniqueId);
+            if (!p && racers.length < 3) {
+                const laneNum = racers.length + 1;
+                const container = document.getElementById('lane-' + laneNum);
+                document.getElementById('img-' + laneNum).style.backgroundImage = `url('${data.url}')`;
+                document.getElementById('name-' + laneNum).innerText = data.uniqueId;
+                container.style.display = 'flex';
+                
+                p = { id: data.uniqueId, lane: container, x: 20, speed: data.diamondCount * 2 };
+                racers.push(p);
+            } else if (p) {
+                p.speed += data.diamondCount * 2;
+            }
+        });
+
+        // ANIMASI GERAKAN
         function animate() {
-            const size = parseInt(document.getElementById('sizeCtrl').value);
-            const speed = parseFloat(document.getElementById('speedCtrl').value);
-            const shape = document.getElementById('shapeCtrl').value;
-            const lifeSpan = parseInt(document.getElementById('timerCtrl').value) * 1000;
             const winW = window.innerWidth;
             const winH = window.innerHeight;
-            const now = Date.now();
 
-            // Animasi Melayang (Bawah)
-            for (let i = photos.length - 1; i >= 0; i--) {
-                let p = photos[i];
-                if (now - p.spawnTime > lifeSpan) {
-                    p.el.remove();
-                    photos.splice(i, 1);
-                    continue;
-                }
-                p.el.style.width = size + 'px';
-                p.el.style.height = size + 'px';
-                p.el.style.borderRadius = shape;
-                p.x += p.dx * speed; p.y += p.dy * speed;
-
-                if (p.x + size > winW || p.x < 0) p.dx *= -1;
-                if (p.y + size > winH || p.y < winH/2) p.dy *= -1; // Pantul di bawah garis tengah
-                p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+            // Gerakan penonton di bawah (Stay selama di room)
+            for (let id in activeUsers) {
+                let u = activeUsers[id];
+                u.x += u.dx; u.y += u.dy;
+                if (u.x < 0 || u.x > winW - 60) u.dx *= -1;
+                if (u.y < winH * 0.5 || u.y > winH - 60) u.dy *= -1;
+                u.el.style.transform = `translate(${u.x}px, ${u.y}px)`;
             }
 
-            // Animasi Balap (Atas)
-            pembalap.forEach(p => {
+            // Gerakan balap di atas
+            racers.forEach(p => {
                 p.x += p.speed * 0.05;
-                if (p.x > winW) p.x = -100; // Looping balap
-                if (p.speed > 0.5) p.speed *= 0.99; // Gesekan udara pelan-pelan
-                p.el.style.transform = `translateX(${p.x}px)`;
+                if (p.x > winW) p.x = -100;
+                if (p.speed > 0.5) p.speed *= 0.99;
+                p.lane.style.transform = `translateX(${p.x}px)`;
             });
 
             requestAnimationFrame(animate);
