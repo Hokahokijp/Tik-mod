@@ -27,6 +27,13 @@
             box-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
 
+        /* ANIMASI BARU: EFEK API UNTUK GIFT SULTAN */
+        @keyframes fire-glow {
+            0% { box-shadow: 0 0 20px #ff4500, 0 0 40px #ff8c00; border-color: #ff4500; transform: scale(1); filter: brightness(1.2); }
+            50% { box-shadow: 0 0 40px #ff0000, 0 0 70px #ff4500; border-color: #ff0000; transform: scale(1.05); filter: brightness(1.5); }
+            100% { box-shadow: 0 0 20px #ff4500, 0 0 40px #ff8c00; border-color: #ff4500; transform: scale(1); filter: brightness(1.2); }
+        }
+
         @keyframes neon-rotate {
             0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px #00fff2; }
             50% { box-shadow: 0 0 20px #ff00ff; }
@@ -51,10 +58,10 @@
             left: 50%;
             transform: translateX(-50%);
             font-weight: bold;
-            font-size: 14px;
             text-shadow: 2px 2px 4px #000;
             white-space: nowrap;
             z-index: 999;
+            transition: font-size 0.3s;
         }
 
         input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
@@ -139,7 +146,6 @@
         let useCount = 0;
         let isPremium = false;
         let registeredEmail = "";
-        const activeUsers = {}; // UNTUK MENCEGAH DUPLIKAT
 
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
@@ -161,6 +167,8 @@
         auth.onAuthStateChanged(user => {
             if (user) {
                 registeredEmail = user.email;
+                db.ref('users/' + user.uid).update({ isOnline: true, lastActive: new Date().toLocaleString('id-ID') });
+                db.ref('users/' + user.uid).onDisconnect().update({ isOnline: false });
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
                     if (!data) return;
@@ -189,16 +197,12 @@
             speak("Menghubungkan ke " + config.user);
         }
 
-        socket.on('munculFoto', (data) => {
-            const uid = data.nickname; 
-            if (activeUsers[uid]) return; // JANGAN BUAT BARU KALO SUDAH ADA
-
+        function buatFotoMelayang(data) {
             if (!isPremium && useCount >= 10) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
             useCount++;
             
             const el = document.createElement('div');
             el.className = 'photo-el';
-            activeUsers[uid] = true;
             
             let imgUrl = data.url;
             if (data.giftName === 'Rose' && data.config.morph !== 'none') imgUrl = data.config.morph;
@@ -211,34 +215,46 @@
             labelNama.style.color = warnaWarni[Math.floor(Math.random() * warnaWarni.length)];
             el.appendChild(labelNama);
 
-            const sizeNum = parseInt(data.config.size);
-            if (data.diamondCount >= 100) {
-                el.style.width = (sizeNum + 40) + 'px'; el.style.height = (sizeNum + 40) + 'px';
+            // LOGIKA SKALA DAN ANIMASI SESUAI NILAI GIFT
+            const baseSize = parseInt(data.config.size);
+            const coins = data.diamondCount || 0;
+            let finalSize = baseSize;
+            let fontSize = 14;
+
+            // Penyesuaian ukuran otomatis berdasarkan koin
+            if (coins >= 500) { 
+                finalSize = baseSize + 100; fontSize = 24; 
+                el.style.animation = "fire-glow 0.5s infinite alternate"; // Animasi API
+                el.style.border = "8px solid #ff4500";
+            } else if (coins >= 100) { 
+                finalSize = baseSize + 50; fontSize = 20; 
                 el.style.animation = "mega-glow 0.8s infinite ease-in-out";
                 el.style.border = "6px solid gold";
-            } else if (data.diamondCount >= 1) {
-                el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
+            } else if (coins >= 1) { 
+                finalSize = baseSize + 20; fontSize = 16; 
                 el.style.animation = "gift-glow 1s infinite";
                 el.style.border = "4px solid #ff0055";
-            } else {
-                el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
+            } else { 
                 el.style.animation = "neon-rotate 3s infinite linear";
                 el.style.border = "3px solid white";
             }
 
+            el.style.width = finalSize + 'px'; 
+            el.style.height = finalSize + 'px';
+            labelNama.style.fontSize = fontSize + 'px';
+
             document.body.appendChild(el);
-            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
             
-            let posX = Math.random() * (window.innerWidth - sizeNum);
-            let posY = Math.random() * (window.innerHeight - sizeNum);
+            let posX = Math.random() * (window.innerWidth - finalSize);
+            let posY = Math.random() * (window.innerHeight - finalSize);
             let velX = (Math.random() - 0.5) * 8;
             let velY = (Math.random() - 0.5) * 8;
             
             function move() {
                 if (!el.parentElement) return;
                 posX += velX; posY += velY;
-                if (posX <= 0 || posX >= window.innerWidth - sizeNum) velX *= -1;
-                if (posY <= 0 || posY >= window.innerHeight - sizeNum) velY *= -1;
+                if (posX <= 0 || posX >= window.innerWidth - finalSize) velX *= -1;
+                if (posY <= 0 || posY >= window.innerHeight - finalSize) velY *= -1;
                 el.style.left = posX + 'px'; el.style.top = posY + 'px';
                 requestAnimationFrame(move);
             }
@@ -246,11 +262,18 @@
 
             setTimeout(() => { 
                 el.style.opacity = '0';
-                setTimeout(() => { 
-                    el.remove(); 
-                    delete activeUsers[uid];
-                }, 500);
+                setTimeout(() => el.remove(), 500);
             }, data.config.time * 1000);
+        }
+
+        socket.on('munculFoto', (data) => {
+            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
+            buatFotoMelayang(data);
+        });
+
+        socket.on('memberJoin', (data) => {
+            speak(`Selamat datang ${data.nickname}`);
+            buatFotoMelayang(data);
         });
 
         socket.on('chat', (data) => { speak(`${data.nickname} bilang: ${data.comment}`); });
