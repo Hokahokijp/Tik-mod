@@ -1,48 +1,59 @@
 const express = require('express');
-const app = express();
-const http = require('http').Server(app);
-const io = require('socket.io')(http);
+const http = require('http');
+const { Server } = require('socket.io');
 const { WebcastPushConnection } = require('tiktok-live-connector');
 
-app.use(express.static('public'));
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Agar bisa membaca file HTML
+// Agar bisa membaca file utama
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
+// TAMBAHKAN INI AGAR PANEL ADMIN BISA DIBUKA
+app.get('/panel-admin', (req, res) => {
+    res.sendFile(__dirname + '/Panel-1990-aa.html');
+});
+
+let tiktokConn;
 
 io.on('connection', (socket) => {
-    let tiktokConn;
-
-    socket.on('setTarget', (config) => {
+    socket.on('setTarget', (data) => {
         if (tiktokConn) tiktokConn.disconnect();
-
-        tiktokConn = new WebcastPushConnection(config.user);
-
+        
+        tiktokConn = new WebcastPushConnection(data.user);
+        
         tiktokConn.connect().then(state => {
-            console.log(`Connected to ${state.roomId}`);
+            socket.emit('status', 'OK');
         }).catch(err => {
-            console.error('Failed to connect', err);
+            socket.emit('status', 'Gagal! Akun tidak Live atau salah username.');
         });
 
-        tiktokConn.on('gift', (data) => {
-            io.emit('munculFoto', {
-                url: data.profilePictureUrl,
-                nickname: data.nickname,
-                giftName: data.giftName,
-                diamondCount: data.diamondCount,
-                config: config
+        // Kirim data foto dan NICKNAME ke semua yang buka web
+        const sendPhoto = (dataLive) => {
+            io.emit('munculFoto', { 
+                url: dataLive.profilePictureUrl, 
+                nickname: dataLive.nickname, // <-- SEKARANG SUDAH AMBIL NICKNAME
+                uniqueId: dataLive.uniqueId, // <-- TAMBAHAN USERNAME @
+                giftName: dataLive.giftName || null,
+                diamondCount: dataLive.diamondCount || 0,
+                config: data 
             });
-        });
+        };
 
-        tiktokConn.on('chat', (data) => {
-            io.emit('chat', {
-                nickname: data.nickname,
-                comment: data.comment
-            });
-        });
-    });
-
-    socket.on('disconnect', () => {
-        if (tiktokConn) tiktokConn.disconnect();
+        tiktokConn.on('chat', sendPhoto);
+        tiktokConn.on('like', sendPhoto);
+        tiktokConn.on('gift', sendPhoto);
+        tiktokConn.on('share', sendPhoto);
+        tiktokConn.on('follow', sendPhoto);
     });
 });
 
-http.listen(3000, () => {
-    console.log('Server running on port 3000');
+// Port hosting biasanya dinamis, pakai process.env.PORT
+const PORT = process.env.PORT || 8091;
+server.listen(PORT, () => {
+    console.log('Server berjalan di port ' + PORT);
 });
