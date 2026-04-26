@@ -195,7 +195,7 @@
             const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value, time: 0, morph: document.getElementById('morphRose').value };
             socket.emit('setTarget', config);
             toggleMenu();
-            speak("Menghubungkan ke " + config.user);
+            speak("Tersambung ke live " + config.user);
         }
 
         function spawnProfile(data) {
@@ -263,39 +263,39 @@
             move();
         }
 
-        // --- REAL-TIME HANDLERS (SUDAH DIPERBAIKI) ---
+        // --- REAL-TIME EVENT HANDLERS (LOGIKA JOIN/LEAVE/STAY) ---
 
-        // Member Masuk: Tampil & Bacakan Selamat Datang
         socket.on('memberJoin', (data) => {
-            spawnProfile(data); // Otomatis tampil
-            const name = data.nickname || data.uniqueId;
-            speak(`${name} selamat datang di room saya`); // Otomatis bicara
+            spawnProfile(data); // Langsung tampil jam itu juga
+            speak(`${data.nickname || data.uniqueId} selamat datang di room saya`); 
         });
 
-        // Member Keluar: Hapus dari Layar & Daftar Aktif
         socket.on('memberLeave', (data) => {
             if (activeProfiles[data.uniqueId]) {
                 const el = activeProfiles[data.uniqueId];
                 el.style.opacity = '0';
+                speak(`${data.nickname || data.uniqueId} sudah pergi meninggalkan room`);
                 setTimeout(() => {
-                    if (el.parentNode) el.parentNode.removeChild(el);
+                    if(el.parentNode) el.parentNode.removeChild(el);
                     delete activeProfiles[data.uniqueId];
                 }, 500);
             }
         });
 
         socket.on('munculFoto', (data) => {
-            spawnProfile(data);
+            spawnProfile(data); // Tetap tampil melayang
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
         });
 
         socket.on('chat', (data) => { 
-            spawnProfile(data);
+            spawnProfile(data); // Tetap tampil melayang
             speak(`${data.nickname} bilang: ${data.comment}`); 
         });
 
-        socket.on('like', (data) => { spawnProfile(data); });
-        
+        socket.on('like', (data) => { 
+            spawnProfile(data); // Tetap tampil melayang saat tap tap layar
+        });
+
         socket.on('share', (data) => { 
             spawnProfile(data);
             speak(`Terima kasih ${data.nickname} sudah share`); 
