@@ -19,24 +19,20 @@ let tiktokConn;
 
 io.on('connection', (socket) => {
     
-    // --- 1. FUNGSI UNTUK REFRESH VIEWER (PASANG DI SINI) ---
+    // 1. REFRESH VIEWER LIST (Atas permintaan manual frontend)
     socket.on('refreshViewerList', async () => {
         try {
-            // Pastikan koneksi tiktok sudah ada
             if (tiktokConn && tiktokConn.getState().isConnected) {
-                // Ambil daftar penonton aktif
                 let viewerList = await tiktokConn.getViewerList(); 
-                
-                // Kirim balik ke frontend (index.html)
                 socket.emit('roomUserList', viewerList);
-                console.log("Daftar viewer berhasil dikirim ke frontend");
+                console.log("Daftar viewer dikirim ke frontend");
             }
         } catch (err) {
-            console.log("Gagal ambil viewer list (Mungkin fitur ini dibatasi TikTok):", err);
+            console.log("Gagal ambil viewer list:", err);
         }
     });
 
-    // --- 2. FUNGSI SET TARGET (KODE LAMA LU) ---
+    // 2. SET TARGET & KONEKSI TIKTOK
     socket.on('setTarget', (data) => {
         if (tiktokConn) tiktokConn.disconnect();
         
@@ -45,7 +41,7 @@ io.on('connection', (socket) => {
         tiktokConn.connect().then(state => {
             socket.emit('status', 'OK');
             
-            // Otomatis kirim viewer list pas baru berhasil konek
+            // Kirim list viewer awal saat baru konek
             tiktokConn.getViewerList().then(list => {
                 socket.emit('roomUserList', list);
             }).catch(e => console.log("Gagal ambil list awal"));
@@ -54,6 +50,7 @@ io.on('connection', (socket) => {
             socket.emit('status', 'Gagal! Akun tidak Live atau salah username.');
         });
 
+        // FUNGSI KIRIM DATA KE SEMUA CLIENT
         const sendPhoto = (dataLive) => {
             io.emit('munculFoto', { 
                 url: dataLive.profilePictureUrl, 
@@ -65,16 +62,29 @@ io.on('connection', (socket) => {
             });
         };
 
-        tiktokConn.on('chat', sendPhoto);
+        // EVENT: MEMBER JOIN (Masuk Room)
+        tiktokConn.on('member', (dataLive) => {
+            io.emit('memberJoin', dataLive);
+        });
+
+        // EVENT: MEMBER LEAVE (Keluar Room) <-- INI YANG LU MINTA
+        tiktokConn.on('leave', (dataLive) => {
+            io.emit('memberLeave', {
+                uniqueId: dataLive.uniqueId,
+                nickname: dataLive.nickname
+            });
+            console.log(`${dataLive.nickname} keluar room`);
+        });
+
+        // EVENT: AKTIVITAS LAINNYA
+        tiktokConn.on('chat', (dataLive) => {
+            io.emit('chat', dataLive); // Kirim data chat lengkap agar google bisa baca chat-nya
+        });
+        
         tiktokConn.on('like', sendPhoto);
         tiktokConn.on('gift', sendPhoto);
         tiktokConn.on('share', sendPhoto);
         tiktokConn.on('follow', sendPhoto);
-        
-        // Tambahan: Jika ada member join saat live berlangsung
-        tiktokConn.on('member', (dataLive) => {
-            io.emit('memberJoin', dataLive);
-        });
     });
 });
 
