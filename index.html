@@ -263,21 +263,22 @@
             move();
         }
 
-        // --- FIXED REAL-TIME EVENT HANDLERS ---
+        // --- REAL-TIME HANDLERS (SUDAH DIPERBAIKI) ---
 
-        // Join: Muncul & Bacakan Nama
+        // Member Masuk: Tampil & Bacakan Selamat Datang
         socket.on('memberJoin', (data) => {
-            spawnProfile(data);
-            speak(`${data.nickname || data.uniqueId} bergabung ke room`);
+            spawnProfile(data); // Otomatis tampil
+            const name = data.nickname || data.uniqueId;
+            speak(`${name} selamat datang di room saya`); // Otomatis bicara
         });
 
-        // Leave: Hapus Total dari DOM & Array
+        // Member Keluar: Hapus dari Layar & Daftar Aktif
         socket.on('memberLeave', (data) => {
             if (activeProfiles[data.uniqueId]) {
                 const el = activeProfiles[data.uniqueId];
                 el.style.opacity = '0';
                 setTimeout(() => {
-                    if(el.parentNode) el.parentNode.removeChild(el);
+                    if (el.parentNode) el.parentNode.removeChild(el);
                     delete activeProfiles[data.uniqueId];
                 }, 500);
             }
@@ -294,6 +295,7 @@
         });
 
         socket.on('like', (data) => { spawnProfile(data); });
+        
         socket.on('share', (data) => { 
             spawnProfile(data);
             speak(`Terima kasih ${data.nickname} sudah share`); 
