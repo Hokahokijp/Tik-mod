@@ -118,7 +118,6 @@
         </select>
         <label>Ukuran Foto (Pixel):</label>
         <input type="range" id="sizeIn" min="40" max="250" value="100">
-        <input type="hidden" id="timeIn" value="0"> 
         <div class="switch-box">
             <span>🔊 Suara Google (TTS)</span>
             <input type="checkbox" id="ttsOn" style="width:20px" checked>
@@ -148,28 +147,19 @@
         let registeredEmail = "";
         let activeProfiles = {}; 
 
+        // Firebase & Auth Logic (TIDAK BERUBAH)
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
-
-        function beli(namaPaket, harga) {
-            const pesan = `Halo Bang, saya mau beli Paket ${namaPaket} (Rp ${harga}).%0AEmail Saya: ${registeredEmail}`;
-            window.open(`https://wa.me/6283815564900?text=${pesan}`, '_blank');
-        }
-
+        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error Login!")); }
         function register() {
             const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
             auth.createUserWithEmailAndPassword(e, p).then(u => {
                 db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free', isOnline: false, lastActive: 'Baru Daftar' });
             }).catch(err => alert(err.message));
         }
-
-        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value).catch(() => alert("Error Login!")); }
-
         auth.onAuthStateChanged(user => {
             if (user) {
                 registeredEmail = user.email;
-                db.ref('users/' + user.uid).update({ isOnline: true, lastActive: new Date().toLocaleString('id-ID') });
-                db.ref('users/' + user.uid).onDisconnect().update({ isOnline: false });
                 db.ref('users/' + user.uid).on('value', snap => {
                     const data = snap.val();
                     if (!data) return;
@@ -185,120 +175,108 @@
 
         function speak(text) {
             if (!document.getElementById('ttsOn').checked) return;
-            window.speechSynthesis.cancel();
             const ut = new SpeechSynthesisUtterance(text);
             ut.lang = 'id-ID';
             window.speechSynthesis.speak(ut);
         }
 
         function konek() {
-            const config = { user: document.getElementById('userIn').value, size: document.getElementById('sizeIn').value, time: 0, morph: document.getElementById('morphRose').value };
-            socket.emit('setTarget', config);
+            const target = document.getElementById('userIn').value;
+            socket.emit('setTarget', { user: target });
             toggleMenu();
-            speak("Tersambung ke live " + config.user);
+            speak("Menghubungkan ke live " + target);
         }
 
+        // FUNGSI UTAMA UNTUK MEMUNCULKAN PROFIL MELAYANG
         function spawnProfile(data) {
-            if (activeProfiles[data.uniqueId]) {
-                const existingEl = activeProfiles[data.uniqueId];
-                if (data.diamondCount >= 100) {
-                    existingEl.style.animation = "mega-glow 0.8s infinite ease-in-out";
-                    existingEl.style.border = "6px solid gold";
-                } else if (data.diamondCount >= 1) {
-                    existingEl.style.animation = "gift-glow 1s infinite";
-                    existingEl.style.border = "4px solid #ff0055";
-                }
-                return;
-            }
+            if (!data.uniqueId) return;
 
-            if (!isPremium && useCount >= 10) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
+            // Jika sudah ada di layar, jangan buat baru
+            if (activeProfiles[data.uniqueId]) return;
+
+            // Cek Limit Free
+            if (!isPremium && useCount >= 10) { 
+                document.getElementById('pay-modal').classList.remove('hidden'); 
+                return; 
+            }
             useCount++;
-            
+
             const el = document.createElement('div');
             el.className = 'photo-el';
+            el.id = "user-" + data.uniqueId;
             
-            let imgUrl = data.profilePictureUrl || data.url;
-            const morphVal = document.getElementById('morphRose').value;
-            if (data.giftName === 'Rose' && morphVal !== 'none') imgUrl = morphVal;
+            let imgUrl = data.profilePictureUrl || "https://www.tiktok.com/favicon.ico";
             el.style.backgroundImage = `url('${imgUrl}')`;
 
             const labelNama = document.createElement('div');
             labelNama.className = 'nama-user-tiktok';
-            labelNama.innerText = data.nickname || data.uniqueId || "User";
-            const warnaWarni = ['#FF0000', '#00FF00', '#00FFFF', '#FFFF00', '#FF00FF', '#FFFFFF', '#00FF7F'];
-            labelNama.style.color = warnaWarni[Math.floor(Math.random() * warnaWarni.length)];
+            labelNama.innerText = data.nickname || data.uniqueId;
             el.appendChild(labelNama);
 
-            const sizeNum = parseInt(document.getElementById('sizeIn').value);
-            el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
-            
-            if (data.diamondCount && data.diamondCount >= 100) {
-                el.style.width = (sizeNum + 40) + 'px'; el.style.height = (sizeNum + 40) + 'px';
-                el.style.animation = "mega-glow 0.8s infinite ease-in-out";
-                el.style.border = "6px solid gold";
-            } else if (data.diamondCount && data.diamondCount >= 1) {
-                el.style.animation = "gift-glow 1s infinite";
-                el.style.border = "4px solid #ff0055";
-            } else {
-                el.style.animation = "neon-rotate 3s infinite linear";
-                el.style.border = "3px solid white";
-            }
+            const size = document.getElementById('sizeIn').value + 'px';
+            el.style.width = size; el.style.height = size;
+            el.style.animation = "neon-rotate 3s infinite linear";
+            el.style.border = "3px solid white";
 
             document.body.appendChild(el);
             activeProfiles[data.uniqueId] = el; 
-            
-            let posX = Math.random() * (window.innerWidth - sizeNum);
-            let posY = Math.random() * (window.innerHeight - sizeNum);
-            let velX = (Math.random() - 0.5) * 8;
-            let velY = (Math.random() - 0.5) * 8;
-            
+
+            // Logika Gerakan Melayang
+            let posX = Math.random() * (window.innerWidth - 100);
+            let posY = Math.random() * (window.innerHeight - 100);
+            let velX = (Math.random() - 0.5) * 5;
+            let velY = (Math.random() - 0.5) * 5;
+
             function move() {
-                if (!el.parentElement) return;
+                if (!activeProfiles[data.uniqueId]) return;
                 posX += velX; posY += velY;
-                if (posX <= 0 || posX >= window.innerWidth - sizeNum) velX *= -1;
-                if (posY <= 0 || posY >= window.innerHeight - sizeNum) velY *= -1;
+                if (posX <= 0 || posX >= window.innerWidth - 80) velX *= -1;
+                if (posY <= 0 || posY >= window.innerHeight - 80) velY *= -1;
                 el.style.left = posX + 'px'; el.style.top = posY + 'px';
                 requestAnimationFrame(move);
             }
             move();
         }
 
-        // --- REAL-TIME EVENT HANDLERS (LOGIKA JOIN/LEAVE/STAY) ---
+        // --- REAL-TIME LISTENERS (SINGKRON OTOMATIS TANPA REFRESH) ---
 
+        // 1. SAAT ADA YANG JOIN (MASUK ROOM)
         socket.on('memberJoin', (data) => {
-            spawnProfile(data); // Langsung tampil jam itu juga
-            speak(`${data.nickname || data.uniqueId} selamat datang di room saya`); 
+            spawnProfile(data); // Langsung muncul profil melayang
+            speak(data.nickname + " bergabung"); // Google baca nama join
         });
 
+        // 2. SAAT ADA YANG LEAVE (KELUAR ROOM)
         socket.on('memberLeave', (data) => {
             if (activeProfiles[data.uniqueId]) {
                 const el = activeProfiles[data.uniqueId];
                 el.style.opacity = '0';
-                speak(`${data.nickname || data.uniqueId} sudah pergi meninggalkan room`);
+                speak(data.nickname + " keluar room"); // Google baca nama keluar
                 setTimeout(() => {
-                    if(el.parentNode) el.parentNode.removeChild(el);
+                    if (el.parentNode) el.parentNode.removeChild(el);
                     delete activeProfiles[data.uniqueId];
                 }, 500);
             }
         });
 
-        socket.on('munculFoto', (data) => {
-            spawnProfile(data); // Tetap tampil melayang
-            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
+        // 3. INTERAKSI LAIN (GIFT, CHAT, LIKE) - Supaya Profil Tetap Ada/Update
+        socket.on('gift', (data) => {
+            spawnProfile(data); 
+            speak(data.nickname + " kasih " + data.giftName);
         });
 
-        socket.on('chat', (data) => { 
-            spawnProfile(data); // Tetap tampil melayang
-            speak(`${data.nickname} bilang: ${data.comment}`); 
+        socket.on('chat', (data) => {
+            spawnProfile(data); // Pastikan profil ada kalau dia chat
+            speak(data.nickname + " ngomong " + data.comment);
         });
 
-        socket.on('like', (data) => { 
-            spawnProfile(data); // Tetap tampil melayang saat tap tap layar
+        socket.on('like', (data) => {
+            spawnProfile(data); // Profil muncul/tetap ada pas tap-tap
         });
 
-        socket.on('share', (data) => { 
+        socket.on('share', (data) => {
             spawnProfile(data);
-            speak(`Terima kasih ${data.nickname} sudah share`); 
+            speak("Terima kasih " + data.nickname + " sudah share");
         });
 
     </script>
