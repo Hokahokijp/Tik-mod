@@ -3,146 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karakter TikTok Live Pro</title>
+    <title>AI TikTok Live Non-Stop</title>
     <style>
         :root { --kulit: #ffdbac; --baju: #1e90ff; --celana: #2c3e50; }
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
         
-        .container { position: relative; width: 400px; height: 600px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+        /* Status Bar */
+        #status-info { position: fixed; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #444; }
+        .dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background-color: #27ae60; box-shadow: 0 0 8px #27ae60; }
+        .offline { background-color: #e74c3c; }
 
-        /* Bubble Chat */
-        #bubble {
-            position: absolute; top: 50px; background: white; padding: 15px;
-            border-radius: 20px; font-weight: bold; border: 3px solid #1e90ff;
-            max-width: 80%; text-align: center; display: none; z-index: 10;
-        }
-
-        /* Animasi Nafas (Idle) */
-        #char-svg {
-            width: 100%; height: 80%;
-            transition: transform 0.3s ease;
-            animation: nafas 4s ease-in-out infinite;
-        }
-        @keyframes nafas {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02) translateY(-5px); }
-        }
-
-        /* Animasi Lompat Gift */
-        .jump { animation: jumpAnim 0.5s ease 3 !important; }
-        @keyframes jumpAnim {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-60px); }
-        }
-
-        .kedip { animation: kedipAnim 5s infinite; transform-origin: center; transform-box: fill-box; }
-        @keyframes kedipAnim { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
-
-        /* Overlay Start */
-        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        input, button { padding: 15px; margin: 10px; border-radius: 10px; border: none; font-size: 16px; }
+        #bubble { position: absolute; top: 60px; background: white; padding: 15px; border-radius: 20px; font-weight: bold; border: 3px solid #1e90ff; width: 80%; text-align: center; display: none; z-index: 10; }
+        #char-svg { width: 100%; height: 80%; animation: breathe 3s infinite; }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02) translateY(-5px); } }
+        
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        input, button { padding: 15px; margin: 10px; border-radius: 10px; border: none; font-size: 16px; outline: none; }
         button { background: #27ae60; color: white; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
+    <div id="status-info"><span id="dot-status" class="dot"></span> <span id="text-status">Sistem Standby</span></div>
+
     <div id="overlay">
-        <input type="text" id="targetUser" placeholder="Username TikTok Kamu">
-        <button onclick="mulaiSistem()">AKTIFKAN & HUBUNGKAN</button>
+        <h2 style="color:white">AI LIVE READER</h2>
+        <input type="text" id="targetUser" placeholder="Username TikTok">
+        <button onclick="hubungkan()">MULAI BACA KOMENTAR</button>
     </div>
 
-    <div id="bubble">Menunggu Data...</div>
+    <div id="bubble"></div>
 
-    <div class="container">
+    <div style="width: 350px; height: 550px; display: flex; align-items: flex-end;">
         <svg id="char-svg" viewBox="0 0 200 350">
             <path id="kaki-l" d="M85,240 L85,320 L75,320" stroke="var(--celana)" stroke-width="18" fill="none" stroke-linecap="round" />
             <path id="kaki-r" d="M115,240 L115,320 L125,320" stroke="var(--celana)" stroke-width="18" fill="none" stroke-linecap="round" />
             <path d="M70,160 Q100,150 130,160 L135,250 Q100,260 65,250 Z" fill="var(--baju)" />
-            <path id="tangan-l" d="M70,170 Q50,205 55,245" stroke="var(--kulit)" stroke-width="12" fill="none" stroke-linecap="round" />
-            <path id="tangan-r" d="M130,170 Q150,205 145,245" stroke="var(--kulit)" stroke-width="12" fill="none" stroke-linecap="round" />
-            <path d="M70,110 Q70,160 100,160 Q130,160 130,110 Q130,60 100,60 Q70,60 70,110" fill="var(--kulit)" />
-            <g class="kedip"><circle cx="88" cy="115" r="5" fill="#111"/><circle cx="112" cy="115" r="5" fill="#111"/></g>
-            <path id="mulut" d="M90,140 Q100,140 110,140" stroke="#78281f" stroke-width="3" fill="none" stroke-linecap="round" />
+            <path id="tangan-r" d="M130,170 Q150,205 145,245" stroke="var(--kulit)" stroke-width="13" fill="none" stroke-linecap="round" />
+            <path d="M72,110 Q72,160 100,160 Q128,160 128,110 Q128,60 100,60 Q72,60 72,110" fill="var(--kulit)" />
+            <path id="mulut" d="M90,142 Q100,142 110,142" stroke="#78281f" stroke-width="3" fill="none" stroke-linecap="round" />
         </svg>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const mulut = document.getElementById('mulut');
-        const bubble = document.getElementById('bubble');
-        const charSvg = document.getElementById('char-svg');
         const synth = window.speechSynthesis;
-        let intervalMulut;
+        let queue = [];
+        let isSpeaking = false;
+        let mouthInterval;
 
-        function mulaiSistem() {
+        function hubungkan() {
             const user = document.getElementById('targetUser').value;
-            if(!user) return alert("Isi username dulu!");
+            if(!user) return alert("User kosong!");
             socket.emit('setTarget', { user: user });
             document.getElementById('overlay').style.display = 'none';
-            googleBicara("Sistem diaktifkan. Halo bosku!");
         }
 
-        function googleBicara(teks) {
-            synth.cancel();
+        socket.on('statusLive', (data) => {
+            const dot = document.getElementById('dot-status');
+            const txt = document.getElementById('text-status');
+            if(data.konek) {
+                dot.className = "dot online";
+                txt.innerText = "LIVE ON: " + data.pesan;
+                tambahKeAntrean("Koneksi berhasil. Karakter siap bertugas.");
+            } else {
+                dot.className = "dot offline";
+                txt.innerText = "LIVE OFF: " + data.pesan;
+                tambahKeAntrean("Peringatan. Live sedang off.");
+            }
+        });
+
+        socket.on('tiktokChat', (data) => { tambahKeAntrean(data.user + " bilang: " + data.message); });
+        socket.on('tiktokGift', (data) => { tambahKeAntrean("Wadidaw! Terima kasih " + data.user + " hadiah " + data.giftName + " nya!"); });
+        socket.on('tiktokJoin', (data) => { tambahKeAntrean("Halo " + data.user + " selamat bergabung!"); });
+
+        function tambahKeAntrean(teks) {
+            queue.push(teks);
+            if (!isSpeaking) prosesAntrean();
+        }
+
+        function prosesAntrean() {
+            if (queue.length === 0) { isSpeaking = false; return; }
+
+            isSpeaking = true;
+            const teks = queue.shift();
             const utter = new SpeechSynthesisUtterance(teks);
             utter.lang = 'id-ID';
             utter.rate = 1.1;
-            
+
             utter.onstart = () => {
-                intervalMulut = setInterval(() => {
-                    let open = 140 + Math.random() * 15;
-                    mulut.setAttribute('d', `M90,140 Q100,${open} 110,140`);
-                }, 80);
+                const b = document.getElementById('bubble');
+                b.innerText = teks;
+                b.style.display = 'block';
+                mulaiMangap();
             };
-            
+
             utter.onend = () => {
-                clearInterval(intervalMulut);
-                mulut.setAttribute('d', "M90,140 Q100,140 110,140");
+                stopMangap();
+                setTimeout(() => { 
+                    document.getElementById('bubble').style.display = 'none';
+                    prosesAntrean(); 
+                }, 400);
             };
-            
+
             synth.speak(utter);
         }
 
-        // RESPONS CHAT
-        socket.on('tiktokChat', (data) => {
-            bubble.innerText = `${data.user}: ${data.message}`;
-            bubble.style.display = 'block';
-            googleBicara(`${data.user} bilang: ${data.message}`);
-            
-            // Cek perintah khusus
-            const msg = data.message.toLowerCase();
-            if(msg.includes('duduk')) gerakDuduk(true);
-            if(msg.includes('berdiri')) gerakDuduk(false);
-            
-            setTimeout(() => bubble.style.display = 'none', 5000);
-        });
+        function mulaiMangap() {
+            const m = document.getElementById('mulut');
+            mouthInterval = setInterval(() => {
+                let h = 142 + Math.random() * 15;
+                m.setAttribute('d', `M90,142 Q100,${h} 110,142`);
+            }, 80);
+        }
 
-        // RESPONS GIFT
-        socket.on('tiktokGift', (data) => {
-            bubble.innerText = `WADIDAW! ${data.user} kasih ${data.giftName}!`;
-            bubble.style.display = 'block';
-            googleBicara(`Wadidaw! Terima kasih ${data.user} kado ${data.giftName}-nya!`);
-            
-            charSvg.classList.add('jump');
-            setTimeout(() => charSvg.classList.remove('jump'), 2000);
-        });
-
-        // RESPONS JOIN
-        socket.on('tiktokJoin', (data) => {
-            googleBicara(`Selamat datang ${data.user}!`);
-        });
-
-        function gerakDuduk(isDuduk) {
-            if(isDuduk) {
-                document.getElementById('kaki-l').setAttribute('d', "M85,240 L85,285 L130,285");
-                document.getElementById('kaki-r').setAttribute('d', "M115,240 L115,285 L160,285");
-                charSvg.style.transform = "translateY(40px)";
-            } else {
-                document.getElementById('kaki-l').setAttribute('d', "M85,240 L85,320 L75,320");
-                document.getElementById('kaki-r').setAttribute('d', "M115,240 L115,320 L125,320");
-                charSvg.style.transform = "translateY(0)";
-            }
+        function stopMangap() {
+            clearInterval(mouthInterval);
+            document.getElementById('mulut').setAttribute('d', "M90,142 Q100,142 110,142");
         }
     </script>
 </body>
