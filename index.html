@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Premium v2.1</title>
+    <title>TikTok Overlay Premium v2.5 GACOR</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -15,203 +15,79 @@
         .hidden { display: none !important; }
         
         .photo-el { 
-            position: absolute; 
-            background-size: cover; 
-            background-position: center; 
-            border-radius: 50%; 
-            pointer-events: none; 
-            transition: opacity 0.5s; 
-            z-index: 50;
-            border: 4px solid transparent;
-            background-clip: padding-box;
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
-            animation: neon-rotate 3s infinite linear;
+            position: absolute; background-size: cover; background-position: center; border-radius: 50%; 
+            pointer-events: none; transition: opacity 0.5s; z-index: 50; border: 4px solid white;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5); animation: neon-rotate 3s infinite linear;
         }
 
         .medali {
-            position: absolute;
-            top: -35px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 40px;
-            z-index: 1000;
-            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
-            animation: bounceMedali 1s infinite;
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            font-size: 40px; z-index: 1000; animation: bounceMedali 1s infinite;
         }
 
-        @keyframes bounceMedali {
-            0%, 100% { top: -35px; }
-            50% { top: -45px; }
-        }
-
-        @keyframes neon-rotate {
-            0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px #00fff2; }
-            50% { box-shadow: 0 0 20px #ff00ff; }
-            100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px #00fff2; }
-        }
+        @keyframes bounceMedali { 0%, 100% { top: -35px; } 50% { top: -45px; } }
+        @keyframes neon-rotate { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 
         .nama-user-tiktok {
-            position: absolute;
-            bottom: -28px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-weight: bold;
-            font-size: 14px;
-            text-shadow: 2px 2px 4px #000;
-            white-space: nowrap;
-            z-index: 999;
-            color: #FFFFFF;
+            position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
+            font-weight: bold; font-size: 14px; text-shadow: 2px 2px 4px #000;
+            white-space: nowrap; z-index: 999; color: #FFFFFF;
         }
 
-        input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; }
-        label { font-size: 11px; font-weight: bold; margin-top: 8px; display: block; color: #555; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
         button { cursor: pointer; border-radius: 5px; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .switch-box { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-top: 10px; background: #f0f0f0; padding: 5px; border-radius: 5px; }
-        .btn-paket { background: #28a745; color: white; font-size: 12px; margin-top: 5px; text-align: left; padding: 12px; }
-        .price { float: right; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="pay-modal" class="hidden">
-        <div class="box">
-            <h3 style="color:red; margin:0;">Limit Habis!</h3>
-            <p style="font-size:12px; margin-bottom:10px;">Pilih paket untuk melanjutkan:</p>
-            <button class="btn-paket" onclick="beli('Satu Hari', '11.000')">Paket 1 Hari <span class="price">11rb</span></button>
-            <button class="btn-paket" onclick="beli('Selamanya', '18.900')" style="background:#6f42c1;">Paket Selamanya <span class="price">18.9rb</span></button>
-            <button onclick="location.reload()" style="background:#eee; color:black; font-size:10px;">TUTUP</button>
-        </div>
-    </div>
+    <div id="pay-modal" class="hidden"><div class="box"><h3 style="color:red;">Limit Habis!</h3><button onclick="beli('Satu Hari', '11.000')">Paket 1 Hari</button><button onclick="location.reload()">TUTUP</button></div></div>
+    <div id="auth-container"><div class="box" id="login-form"><h3>Masuk Akun</h3><input type="email" id="l-email" placeholder="Email"><input type="password" id="l-pass" placeholder="Password"><button onclick="login()" style="background:#007bff; color:white;">MASUK</button></div></div>
 
-    <div id="auth-container">
-        <div class="box" id="login-form">
-            <h3>Masuk Akun</h3>
-            <input type="email" id="l-email" placeholder="Email">
-            <input type="password" id="l-pass" placeholder="Password">
-            <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
-            <p style="font-size:12px">Belum punya akun? <a href="#" onclick="showReg()">Daftar</a></p>
-        </div>
-        <div class="box hidden" id="register-form">
-            <h3>Daftar Baru</h3>
-            <input type="text" id="r-tiktok" placeholder="Username TikTok">
-            <input type="email" id="r-email" placeholder="Email">
-            <input type="password" id="r-pass" placeholder="Password">
-            <button onclick="register()" style="background:#28a745; color:white;">DAFTAR</button>
-            <p style="font-size:12px"><a href="#" onclick="showLogin()">Balik Login</a></p>
-        </div>
-    </div>
-
-    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%;" onclick="toggleMenu()">⚙️</button>
     
     <div id="menu" class="hidden">
-        <h4 style="margin:0 0 10px 0">⚙️ Pengaturan</h4>
-        <label>Username TikTok Target:</label>
-        <input type="text" id="userIn" placeholder="Contoh: hoka_hoki">
-        <label>Jika Ada Gift Rose Jadi:</label>
+        <h4>⚙️ Pengaturan</h4>
+        <input type="text" id="userIn" placeholder="Username TikTok">
+        <label>Rose Jadi:</label>
         <select id="morphRose">
-            <option value="none">Foto Profil Asli</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png"> Jadi Kodok</option>
-            <option value="https://cdn-icons-png.flaticon.com/512/616/616408.png"> Jadi Kucing lucu</option>
-            <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png"> Jadi Buaya</option>
+            <option value="none">Asli</option>
+            <option value="https://cdn-icons-png.flaticon.com/512/3571/3571612.png">Kodok</option>
+            <option value="https://i.ibb.co.com/whq7Qv3z/download-removebg-preview.png">Buaya</option>
         </select>
-        <label>Ukuran Foto (Pixel):</label>
+        <label>Ukuran:</label>
         <input type="range" id="sizeIn" min="40" max="250" value="100">
-        <div class="switch-box">
-            <span>🔊 Suara Google (TTS)</span>
-            <input type="checkbox" id="ttsOn" style="width:20px" checked>
-        </div>
-        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
-        <button onclick="auth.signOut(); location.reload();" style="background:#dc3545; color:white; font-size:10px; padding:5px;">Logout</button>
+        <button onclick="konek()" style="background:#007bff; color:white;">KONEK GACOR</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        const socket = io();
+        let activeProfiles = {}; 
+        let userDiamonds = {};
         let speechQueue = [];
         let isSpeaking = false;
 
+        // --- TTS SYSTEM ---
         function speak(text) {
-            if (!document.getElementById('ttsOn').checked) return;
             speechQueue.push(text);
             if (!isSpeaking) processQueue();
         }
-
         function processQueue() {
             if (speechQueue.length === 0) { isSpeaking = false; return; }
             isSpeaking = true;
-            const text = speechQueue.shift();
-            window.speechSynthesis.cancel();
-            const ut = new SpeechSynthesisUtterance(text);
+            const ut = new SpeechSynthesisUtterance(speechQueue.shift());
             ut.lang = 'id-ID';
-            ut.rate = 1.2;
             ut.onend = () => processQueue();
             window.speechSynthesis.speak(ut);
         }
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
-            authDomain: "sos-pro-cd66d.firebaseapp.com",
-            databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
-            projectId: "sos-pro-cd66d",
-            storageBucket: "sos-pro-cd66d.appspot.com",
-            messagingSenderId: "879343847954",
-            appId: "1:879343847954:web:cc0b959202055fc252e6cb"
-        };
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
-        const socket = io();
 
-        let useCount = 0;
-        let isPremium = false;
-        let registeredEmail = "";
-        let activeProfiles = {}; 
-        let userDiamonds = {};
-
-        function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
-        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
-        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
-
-        function login() { 
-            auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value)
-                .catch(() => alert("Error Login!")); 
-        }
-
-        function register() {
-            const tiktok = document.getElementById('r-tiktok').value, e = document.getElementById('r-email').value, p = document.getElementById('r-pass').value;
-            auth.createUserWithEmailAndPassword(e, p).then(u => {
-                db.ref('users/' + u.user.uid).set({ email: e, tiktokUser: tiktok, status: 'free' });
-            }).catch(err => alert(err.message));
-        }
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                registeredEmail = user.email;
-                db.ref('users/' + user.uid).on('value', snap => {
-                    const data = snap.val();
-                    if (!data) return;
-                    document.getElementById('auth-container').classList.add('hidden');
-                    document.getElementById('btnT').classList.remove('hidden');
-                    document.getElementById('userIn').value = data.tiktokUser;
-                    if(data.status.toLowerCase() === 'premium') isPremium = true;
-                });
-            } else { document.getElementById('auth-container').classList.remove('hidden'); }
-        });
-
-        function updateLeaderboard() {
-            let sortedIds = Object.keys(userDiamonds).sort((a, b) => userDiamonds[b] - userDiamonds[a]);
-            document.querySelectorAll('.medali').forEach(m => m.remove());
-            sortedIds.forEach((id, index) => {
-                if (index > 2 || userDiamonds[id] <= 0) return;
-                const el = activeProfiles[id];
-                if (el) {
-                    const m = document.createElement('div');
-                    m.className = 'medali';
-                    m.innerText = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-                    el.appendChild(m);
-                }
-            });
-        }
-
+        // --- CORE FUNCTIONS ---
         function spawnProfile(data, silent = false) {
             if (activeProfiles[data.uniqueId]) {
                 if (data.diamondCount) {
@@ -220,100 +96,86 @@
                 }
                 return;
             }
-            if (!isPremium && useCount >= 10) { document.getElementById('pay-modal').classList.remove('hidden'); return; }
-            
-            useCount++;
+
             const el = document.createElement('div');
             el.className = 'photo-el';
-            
             let imgUrl = data.profilePictureUrl || data.url;
-            const morphVal = document.getElementById('morphRose').value;
-            if (data.giftName === 'Rose' && morphVal !== 'none') imgUrl = morphVal;
+            if (data.giftName === 'Rose' && document.getElementById('morphRose').value !== 'none') imgUrl = document.getElementById('morphRose').value;
+            
             el.style.backgroundImage = `url('${imgUrl}')`;
+            const size = document.getElementById('sizeIn').value + 'px';
+            el.style.width = size; el.style.height = size;
 
-            const labelNama = document.createElement('div');
-            labelNama.className = 'nama-user-tiktok';
-            labelNama.innerText = data.nickname || data.uniqueId;
-            el.appendChild(labelNama);
-
-            const sizeNum = parseInt(document.getElementById('sizeIn').value);
-            el.style.width = sizeNum + 'px'; el.style.height = sizeNum + 'px';
-            el.style.border = "3px solid white";
+            const label = document.createElement('div');
+            label.className = 'nama-user-tiktok';
+            label.innerText = data.nickname || data.uniqueId;
+            el.appendChild(label);
 
             document.body.appendChild(el);
             activeProfiles[data.uniqueId] = el;
             userDiamonds[data.uniqueId] = data.diamondCount || 0;
 
-            if(!silent) speak(`${labelNama.innerText} bergabung`);
+            if(!silent) speak(`${label.innerText} gabung`);
             
-            let posX = Math.random() * (window.innerWidth - sizeNum);
-            let posY = Math.random() * (window.innerHeight - sizeNum);
-            let velX = (Math.random() - 0.5) * 4;
-            let velY = (Math.random() - 0.5) * 4;
-            
+            // Logic Gerak
+            let px = Math.random() * window.innerWidth, py = Math.random() * window.innerHeight;
+            let vx = (Math.random()-0.5)*4, vy = (Math.random()-0.5)*4;
             function move() {
-                if (!el.parentElement) return;
-                posX += velX; posY += velY;
-                if (posX <= 0 || posX >= window.innerWidth - sizeNum) velX *= -1;
-                if (posY <= 0 || posY >= window.innerHeight - sizeNum) velY *= -1;
-                el.style.left = posX + 'px'; el.style.top = posY + 'px';
+                if(!el.parentElement) return;
+                px += vx; py += vy;
+                if(px<0 || px>window.innerWidth-100) vx*=-1;
+                if(py<0 || py>window.innerHeight-100) vy*=-1;
+                el.style.left = px+'px'; el.style.top = py+'px';
                 requestAnimationFrame(move);
             }
             move();
             updateLeaderboard();
         }
 
-        // --- SOCKET LISTENER TERPUSAT ---
-        
-        socket.on('memberJoin', (data) => {
-            spawnProfile(data, false);
-        });
+        function updateLeaderboard() {
+            let sorted = Object.keys(userDiamonds).sort((a,b) => userDiamonds[b]-userDiamonds[a]);
+            document.querySelectorAll('.medali').forEach(m => m.remove());
+            sorted.slice(0,3).forEach((id, i) => {
+                if(userDiamonds[id] > 0 && activeProfiles[id]) {
+                    const m = document.createElement('div');
+                    m.className = 'medali';
+                    m.innerText = i==0?'🥇':i==1?'🥈':'🥉';
+                    activeProfiles[id].appendChild(m);
+                }
+            });
+        }
 
-        socket.on('chat', (data) => {
-            spawnProfile(data, true); 
-            speak(`${data.nickname} bilang ${data.comment}`);
-        });
-
-        socket.on('munculFoto', (data) => {
-            spawnProfile(data, true);
-            if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
-        });
-
-        socket.on('activity', (data) => {
-            spawnProfile(data, true);
-            if (data.type === 'share') speak(`Terima kasih ${data.nickname} sudah share`);
-        });
-
-        socket.on('memberLeave', (data) => {
-            if (activeProfiles[data.uniqueId]) {
-                const el = activeProfiles[data.uniqueId];
-                el.style.opacity = '0';
-                setTimeout(() => {
-                    if(el.parentNode) el.parentNode.removeChild(el);
-                    delete activeProfiles[data.uniqueId];
-                    delete userDiamonds[data.uniqueId];
-                    updateLeaderboard();
-                }, 500);
+        // --- SOCKET LISTENERS (BRUTAL MODE) ---
+        socket.on('memberJoin', d => spawnProfile(d, false));
+        socket.on('chat', d => { spawnProfile(d, true); speak(`${d.nickname}: ${d.comment}`); });
+        socket.on('munculFoto', d => { spawnProfile(d, true); if(d.giftName) speak(`${d.nickname} kasih ${d.giftName}`); });
+        socket.on('activity', d => { spawnProfile(d, true); if(d.type !== 'like') speak(`${d.nickname} ${d.type}`); });
+        socket.on('memberLeave', d => {
+            if(activeProfiles[d.uniqueId]) {
+                activeProfiles[d.uniqueId].remove();
+                delete activeProfiles[d.uniqueId];
+                delete userDiamonds[d.uniqueId];
+                updateLeaderboard();
             }
         });
 
-        socket.on('roomUserList', (list) => {
-            if(Array.isArray(list)) list.forEach(u => spawnProfile(u, true));
+        // --- AUTO RECONNECT ON REFRESH ---
+        socket.on('connect', () => {
+            const last = document.getElementById('userIn').value;
+            if(last) socket.emit('setTarget', { user: last });
         });
 
         function konek() {
-            const user = document.getElementById('userIn').value;
-            if(!user) return alert("Isi Username!");
-            
-            document.querySelectorAll('.photo-el').forEach(el => el.remove());
+            const u = document.getElementById('userIn').value;
+            document.querySelectorAll('.photo-el').forEach(e => e.remove());
             activeProfiles = {}; userDiamonds = {};
-            
-            socket.emit('setTarget', { user: user });
+            socket.emit('setTarget', { user: u });
             toggleMenu();
-            speak("Menghubungkan ke " + user);
         }
 
-        function beli(n, h) { window.open(`https://wa.me/6283815564900?text=Beli Paket ${n}. Email: ${registeredEmail}`, '_blank'); }
+        function login() { auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value); }
+        auth.onAuthStateChanged(u => { if(u) { document.getElementById('auth-container').classList.add('hidden'); document.getElementById('btnT').classList.remove('hidden'); } });
+        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
     </script>
 </body>
 </html>
