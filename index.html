@@ -126,7 +126,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // 1. ANTREAN SUARA (Diletakkan paling atas agar bisa diakses semua fungsi)
         let speechQueue = [];
         let isSpeaking = false;
 
@@ -148,7 +147,6 @@
             window.speechSynthesis.speak(ut);
         }
 
-        // 2. KONFIGURASI FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
             authDomain: "sos-pro-cd66d.firebaseapp.com",
@@ -163,14 +161,12 @@
         const db = firebase.database();
         const socket = io();
 
-        // 3. STATE APLIKASI
         let useCount = 0;
         let isPremium = false;
         let registeredEmail = "";
         let activeProfiles = {}; 
         let userDiamonds = {};
 
-        // 4. LOGIKA AUTH & MENU
         function showReg() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
         function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
         function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
@@ -201,7 +197,6 @@
             } else { document.getElementById('auth-container').classList.remove('hidden'); }
         });
 
-        // 5. LOGIKA MEDALI & LEADERBOARD
         function updateLeaderboard() {
             let sortedIds = Object.keys(userDiamonds).sort((a, b) => userDiamonds[b] - userDiamonds[a]);
             document.querySelectorAll('.medali').forEach(m => m.remove());
@@ -217,7 +212,6 @@
             });
         }
 
-        // 6. LOGIKA SPAWN FOTO (BOUNCING)
         function spawnProfile(data, silent = false) {
             if (activeProfiles[data.uniqueId]) {
                 if (data.diamondCount) {
@@ -269,7 +263,6 @@
             updateLeaderboard();
         }
 
-        // 7. SOCKET EVENTS
         function konek() {
             document.querySelectorAll('.photo-el').forEach(el => el.remove());
             activeProfiles = {}; userDiamonds = {};
@@ -279,15 +272,24 @@
             speak("Menghubungkan ke " + config.user);
         }
 
+        // --- SOCKET LISTENER (FIXED) ---
         socket.on('memberJoin', (data) => spawnProfile(data, false));
-        socket.on('chat', (data) => { spawnProfile(data, true); speak(`${data.nickname} bilang ${data.comment}`); });
+        
+        socket.on('chat', (data) => { 
+            spawnProfile(data, true); 
+            speak(`${data.nickname} bilang ${data.comment}`); 
+        });
+
         socket.on('munculFoto', (data) => {
             spawnProfile(data, true);
             if (data.giftName) speak(`${data.nickname} kasih ${data.giftName}`);
         });
-        socket.on('share', (data) => { spawnProfile(data, true); speak(`Terima kasih ${data.nickname} sudah share`); });
-        socket.on('like', (data) => spawnProfile(data, true));
-        
+
+        socket.on('activity', (data) => {
+            spawnProfile(data, true);
+            if (data.type === 'share') speak(`Terima kasih ${data.nickname} sudah share`);
+        });
+
         socket.on('memberLeave', (data) => {
             if (activeProfiles[data.uniqueId]) {
                 const el = activeProfiles[data.uniqueId];
@@ -299,6 +301,10 @@
                     updateLeaderboard();
                 }, 500);
             }
+        });
+
+        socket.on('roomUserList', (list) => {
+            if(Array.isArray(list)) list.forEach(u => spawnProfile(u, true));
         });
 
         function beli(n, h) { window.open(`https://wa.me/6283815564900?text=Beli Paket ${n}. Email: ${registeredEmail}`, '_blank'); }
