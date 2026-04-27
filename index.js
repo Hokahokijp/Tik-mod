@@ -7,61 +7,75 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
 
-// DATABASE KONEKSI AKTIF (Biar gak mampet & gak tabrakan)
-const userPipes = new Map();
+app.get('/panel-admin', (req, res) => {
+    res.sendFile(__dirname + '/Panel-1990-aa.html');
+});
+
+let tiktokConn;
 
 io.on('connection', (socket) => {
-    console.log('User Terhubung:', socket.id);
+    console.log('User Konek ke Server');
 
     socket.on('setTarget', (data) => {
-        // Bersihkan koneksi lama KHUSUS ID socket ini (biar gak numpuk)
-        if (userPipes.has(socket.id)) {
-            userPipes.get(socket.id).removeAllListeners();
-            userPipes.get(socket.id).disconnect();
-        }
+        if (tiktokConn) tiktokConn.disconnect();
+        
+        tiktokConn = new WebcastPushConnection(data.user);
+        
+        tiktokConn.connect().then(state => {
+            socket.emit('status', 'OK');
+            
+            // Ambil viewer yang udah ada di room saat konek
+            tiktokConn.getViewerList().then(list => {
+                socket.emit('roomUserList', list);
+            }).catch(e => console.log("Gagal ambil list awal"));
 
-        // Buka Pipa Baru (Loss tanpa delay)
-        const tiktok = new WebcastPushConnection(data.user, {
-            processDelay: 0,
-            enableExtendedGiftInfo: true
+        }).catch(err => {
+            socket.emit('status', 'Gagal! Akun tidak Live atau salah username.');
         });
 
-        tiktok.connect().then(() => {
-            socket.emit('status', 'OK');
-            userPipes.set(socket.id, tiktok);
-        }).catch(() => socket.emit('status', 'Error!'));
+        // --- EVENT TIKTOK KE FRONTEND ---
 
-        // Kirim data HANYA ke socket yang meminta (socket.emit, bukan io.emit)
-        const kirimData = (event, payload) => {
-            if (socket.connected) {
-                socket.emit(event, payload);
-            }
-        };
+        // Member Masuk
+        tiktokConn.on('member', (dataLive) => {
+            io.emit('memberJoin', dataLive);
+        });
 
-        tiktok.on('chat', (d) => kirimData('chat', d));
-        tiktok.on('member', (d) => kirimData('memberJoin', d));
-        tiktokConn.on('leave', (d) => kirimData('memberLeave', d));
-        tiktok.on('gift', (d) => kirimData('munculFoto', {
-            url: d.profilePictureUrl,
-            nickname: d.nickname,
-            uniqueId: d.uniqueId,
-            giftName: d.giftName,
-            diamondCount: d.diamondCount || 0
-        }));
-        tiktok.on('like', (d) => kirimData('like', d));
-        tiktok.on('share', (d) => kirimData('share', d));
-    });
+        // Member Keluar (Hapus Foto)
+        tiktokConn.on('leave', (dataLive) => {
+            io.emit('memberLeave', {
+                uniqueId: dataLive.uniqueId
+            });
+        });
 
-    // Otomatis tutup pipa kalau tab browser ditutup
-    socket.on('disconnect', () => {
-        if (userPipes.has(socket.id)) {
-            userPipes.get(socket.id).disconnect();
-            userPipes.delete(socket.id);
-            console.log('User pergi, pipa ditutup otomatis.');
-        }
+        // Chat Google Baca
+        tiktokConn.on('chat', (dataLive) => {
+            io.emit('chat', dataLive);
+        });
+
+        // Gift / Saweran
+        tiktokConn.on('gift', (dataLive) => {
+            io.emit('munculFoto', {
+                ...dataLive,
+                url: dataLive.profilePictureUrl,
+                // Hitung total diamond kalau multi-gift
+                diamondCount: (dataLive.diamondCount || 0) * (dataLive.repeatCount || 1)
+            });
+        });
+
+        // Like, Share, Follow
+        tiktokConn.on('like', (dataLive) => io.emit('activity', { ...dataLive, type: 'like' }));
+        tiktokConn.on('share', (dataLive) => io.emit('activity', { ...dataLive, type: 'share' }));
+        tiktokConn.on('follow', (dataLive) => io.emit('activity', { ...dataLive, type: 'follow' }));
+
+        tiktokConn.on('error', (err) => console.log('Tiktok Error:', err));
     });
 });
 
-server.listen(process.env.PORT || 8091, () => console.log('Server Plong Jalan!'));
+const PORT = process.env.PORT || 8091;
+server.listen(PORT, () => {
+    console.log('Server Full Speed di Port ' + PORT);
+});
