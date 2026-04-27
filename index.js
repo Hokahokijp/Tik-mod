@@ -2,61 +2,62 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { WebcastPushConnection } = require('tiktok-live-connector');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 let tiktokConn;
-let currentUser = "";
-
-function startTikTok(username) {
-    if (tiktokConn) {
-        tiktokConn.removeAllListeners();
-        tiktokConn.disconnect();
-    }
-
-    currentUser = username;
-    tiktokConn = new WebcastPushConnection(username);
-
-    tiktokConn.connect().then(state => {
-        console.log(`[CONNECTED] -> ${username}`);
-        io.emit('status', 'Koneksi Berhasil!');
-    }).catch(err => {
-        console.log(`[RETRYING] -> ${username}`);
-        setTimeout(() => startTikTok(currentUser), 5000); // Auto-reconnect kalau gagal
-    });
-
-    // --- EVENT PUSH REAL-TIME ---
-    tiktokConn.on('member', (data) => io.emit('memberJoin', data));
-    tiktokConn.on('chat', (data) => io.emit('chat', data));
-    tiktokConn.on('gift', (data) => {
-        io.emit('munculFoto', {
-            ...data,
-            url: data.profilePictureUrl,
-            diamondCount: (data.diamondCount || 0) * (data.repeatCount || 1)
-        });
-    });
-    tiktokConn.on('like', (data) => io.emit('activity', { ...data, type: 'like' }));
-    tiktokConn.on('share', (data) => io.emit('activity', { ...data, type: 'share' }));
-    tiktokConn.on('follow', (data) => io.emit('activity', { ...data, type: 'follow' }));
-    tiktokConn.on('leave', (data) => io.emit('memberLeave', { uniqueId: data.uniqueId }));
-
-    // Jika koneksi putus tiba-tiba
-    tiktokConn.on('disconnected', () => {
-        setTimeout(() => startTikTok(currentUser), 5000);
-    });
-}
 
 io.on('connection', (socket) => {
+    console.log('Browser Terkoneksi ✅');
+
     socket.on('setTarget', (data) => {
-        startTikTok(data.user);
+        if (tiktokConn) tiktokConn.disconnect();
+        
+        tiktokConn = new WebcastPushConnection(data.user);
+        
+        tiktokConn.connect().then(state => {
+            socket.emit('status', 'Koneksi Sukses!');
+            console.log(`Menghubungkan ke TikTok: ${data.user}`);
+        }).catch(err => {
+            socket.emit('status', 'Gagal Konek! Akun mungkin offline.');
+        });
+
+        // 1. DATA KOMENTAR
+        tiktokConn.on('chat', (dataLive) => {
+            io.emit('tiktokChat', {
+                user: dataLive.nickname,
+                message: dataLive.comment
+            });
+        });
+
+        // 2. DATA HADIAH (GIFT)
+        tiktokConn.on('gift', (dataLive) => {
+            io.emit('tiktokGift', {
+                user: dataLive.nickname,
+                giftName: dataLive.giftName,
+                count: dataLive.repeatCount
+            });
+        });
+
+        // 3. DATA ORANG MASUK (JOIN)
+        tiktokConn.on('member', (dataLive) => {
+            io.emit('tiktokJoin', {
+                user: dataLive.nickname
+            });
+        });
     });
 });
 
 const PORT = 8091;
 server.listen(PORT, () => {
-    console.log(`=== SERVER AKTIF DI PORT ${PORT} ===`);
+    console.log(`SISTEM AKTIF! Buka http://localhost:${PORT}`);
 });
