@@ -7,75 +7,56 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
-
-app.get('/panel-admin', (req, res) => {
-    res.sendFile(__dirname + '/Panel-1990-aa.html');
-});
+app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
 let tiktokConn;
+let currentUser = "";
+
+function startTikTok(username) {
+    if (tiktokConn) {
+        tiktokConn.removeAllListeners();
+        tiktokConn.disconnect();
+    }
+
+    currentUser = username;
+    tiktokConn = new WebcastPushConnection(username);
+
+    tiktokConn.connect().then(state => {
+        console.log(`[CONNECTED] -> ${username}`);
+        io.emit('status', 'Koneksi Berhasil!');
+    }).catch(err => {
+        console.log(`[RETRYING] -> ${username}`);
+        setTimeout(() => startTikTok(currentUser), 5000); // Auto-reconnect kalau gagal
+    });
+
+    // --- EVENT PUSH REAL-TIME ---
+    tiktokConn.on('member', (data) => io.emit('memberJoin', data));
+    tiktokConn.on('chat', (data) => io.emit('chat', data));
+    tiktokConn.on('gift', (data) => {
+        io.emit('munculFoto', {
+            ...data,
+            url: data.profilePictureUrl,
+            diamondCount: (data.diamondCount || 0) * (data.repeatCount || 1)
+        });
+    });
+    tiktokConn.on('like', (data) => io.emit('activity', { ...data, type: 'like' }));
+    tiktokConn.on('share', (data) => io.emit('activity', { ...data, type: 'share' }));
+    tiktokConn.on('follow', (data) => io.emit('activity', { ...data, type: 'follow' }));
+    tiktokConn.on('leave', (data) => io.emit('memberLeave', { uniqueId: data.uniqueId }));
+
+    // Jika koneksi putus tiba-tiba
+    tiktokConn.on('disconnected', () => {
+        setTimeout(() => startTikTok(currentUser), 5000);
+    });
+}
 
 io.on('connection', (socket) => {
-    console.log('User Konek ke Server');
-
     socket.on('setTarget', (data) => {
-        if (tiktokConn) tiktokConn.disconnect();
-        
-        tiktokConn = new WebcastPushConnection(data.user);
-        
-        tiktokConn.connect().then(state => {
-            socket.emit('status', 'OK');
-            
-            // Ambil viewer yang udah ada di room saat konek
-            tiktokConn.getViewerList().then(list => {
-                socket.emit('roomUserList', list);
-            }).catch(e => console.log("Gagal ambil list awal"));
-
-        }).catch(err => {
-            socket.emit('status', 'Gagal! Akun tidak Live atau salah username.');
-        });
-
-        // --- EVENT TIKTOK KE FRONTEND ---
-
-        // Member Masuk
-        tiktokConn.on('member', (dataLive) => {
-            io.emit('memberJoin', dataLive);
-        });
-
-        // Member Keluar (Hapus Foto)
-        tiktokConn.on('leave', (dataLive) => {
-            io.emit('memberLeave', {
-                uniqueId: dataLive.uniqueId
-            });
-        });
-
-        // Chat Google Baca
-        tiktokConn.on('chat', (dataLive) => {
-            io.emit('chat', dataLive);
-        });
-
-        // Gift / Saweran
-        tiktokConn.on('gift', (dataLive) => {
-            io.emit('munculFoto', {
-                ...dataLive,
-                url: dataLive.profilePictureUrl,
-                // Hitung total diamond kalau multi-gift
-                diamondCount: (dataLive.diamondCount || 0) * (dataLive.repeatCount || 1)
-            });
-        });
-
-        // Like, Share, Follow
-        tiktokConn.on('like', (dataLive) => io.emit('activity', { ...dataLive, type: 'like' }));
-        tiktokConn.on('share', (dataLive) => io.emit('activity', { ...dataLive, type: 'share' }));
-        tiktokConn.on('follow', (dataLive) => io.emit('activity', { ...dataLive, type: 'follow' }));
-
-        tiktokConn.on('error', (err) => console.log('Tiktok Error:', err));
+        startTikTok(data.user);
     });
 });
 
-const PORT = process.env.PORT || 8091;
+const PORT = 8091;
 server.listen(PORT, () => {
-    console.log('Server Full Speed di Port ' + PORT);
+    console.log(`=== SERVER AKTIF DI PORT ${PORT} ===`);
 });
