@@ -7,88 +7,61 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
+app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
-app.get('/panel-admin', (req, res) => {
-    res.sendFile(__dirname + '/Panel-1990-aa.html');
-});
-
-let tiktokConn;
+// DATABASE KONEKSI AKTIF (Biar gak mampet & gak tabrakan)
+const userPipes = new Map();
 
 io.on('connection', (socket) => {
-    
-    // 1. REFRESH VIEWER LIST (Atas permintaan manual frontend)
-    socket.on('refreshViewerList', async () => {
-        try {
-            if (tiktokConn && tiktokConn.getState().isConnected) {
-                let viewerList = await tiktokConn.getViewerList(); 
-                socket.emit('roomUserList', viewerList);
-                console.log("Daftar viewer dikirim ke frontend");
-            }
-        } catch (err) {
-            console.log("Gagal ambil viewer list:", err);
-        }
-    });
+    console.log('User Terhubung:', socket.id);
 
-    // 2. SET TARGET & KONEKSI TIKTOK
     socket.on('setTarget', (data) => {
-        if (tiktokConn) tiktokConn.disconnect();
-        
-        tiktokConn = new WebcastPushConnection(data.user);
-        
-        tiktokConn.connect().then(state => {
-            socket.emit('status', 'OK');
-            
-            // Kirim list viewer awal saat baru konek
-            tiktokConn.getViewerList().then(list => {
-                socket.emit('roomUserList', list);
-            }).catch(e => console.log("Gagal ambil list awal"));
+        // Bersihkan koneksi lama KHUSUS ID socket ini (biar gak numpuk)
+        if (userPipes.has(socket.id)) {
+            userPipes.get(socket.id).removeAllListeners();
+            userPipes.get(socket.id).disconnect();
+        }
 
-        }).catch(err => {
-            socket.emit('status', 'Gagal! Akun tidak Live atau salah username.');
+        // Buka Pipa Baru (Loss tanpa delay)
+        const tiktok = new WebcastPushConnection(data.user, {
+            processDelay: 0,
+            enableExtendedGiftInfo: true
         });
 
-        // FUNGSI KIRIM DATA KE SEMUA CLIENT
-        const sendPhoto = (dataLive) => {
-            io.emit('munculFoto', { 
-                url: dataLive.profilePictureUrl, 
-                nickname: dataLive.nickname, 
-                uniqueId: dataLive.uniqueId, 
-                giftName: dataLive.giftName || null,
-                diamondCount: dataLive.diamondCount || 0,
-                config: data 
-            });
+        tiktok.connect().then(() => {
+            socket.emit('status', 'OK');
+            userPipes.set(socket.id, tiktok);
+        }).catch(() => socket.emit('status', 'Error!'));
+
+        // Kirim data HANYA ke socket yang meminta (socket.emit, bukan io.emit)
+        const kirimData = (event, payload) => {
+            if (socket.connected) {
+                socket.emit(event, payload);
+            }
         };
 
-        // EVENT: MEMBER JOIN (Masuk Room)
-        tiktokConn.on('member', (dataLive) => {
-            io.emit('memberJoin', dataLive);
-        });
+        tiktok.on('chat', (d) => kirimData('chat', d));
+        tiktok.on('member', (d) => kirimData('memberJoin', d));
+        tiktokConn.on('leave', (d) => kirimData('memberLeave', d));
+        tiktok.on('gift', (d) => kirimData('munculFoto', {
+            url: d.profilePictureUrl,
+            nickname: d.nickname,
+            uniqueId: d.uniqueId,
+            giftName: d.giftName,
+            diamondCount: d.diamondCount || 0
+        }));
+        tiktok.on('like', (d) => kirimData('like', d));
+        tiktok.on('share', (d) => kirimData('share', d));
+    });
 
-        // EVENT: MEMBER LEAVE (Keluar Room) <-- INI YANG LU MINTA
-        tiktokConn.on('leave', (dataLive) => {
-            io.emit('memberLeave', {
-                uniqueId: dataLive.uniqueId,
-                nickname: dataLive.nickname
-            });
-            console.log(`${dataLive.nickname} keluar room`);
-        });
-
-        // EVENT: AKTIVITAS LAINNYA
-        tiktokConn.on('chat', (dataLive) => {
-            io.emit('chat', dataLive); // Kirim data chat lengkap agar google bisa baca chat-nya
-        });
-        
-        tiktokConn.on('like', sendPhoto);
-        tiktokConn.on('gift', sendPhoto);
-        tiktokConn.on('share', sendPhoto);
-        tiktokConn.on('follow', sendPhoto);
+    // Otomatis tutup pipa kalau tab browser ditutup
+    socket.on('disconnect', () => {
+        if (userPipes.has(socket.id)) {
+            userPipes.get(socket.id).disconnect();
+            userPipes.delete(socket.id);
+            console.log('User pergi, pipa ditutup otomatis.');
+        }
     });
 });
 
-const PORT = process.env.PORT || 8091;
-server.listen(PORT, () => {
-    console.log('Server berjalan di port ' + PORT);
-});
+server.listen(process.env.PORT || 8091, () => console.log('Server Plong Jalan!'));
