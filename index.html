@@ -263,21 +263,15 @@
             updateLeaderboard();
         }
 
-        function konek() {
-            document.querySelectorAll('.photo-el').forEach(el => el.remove());
-            activeProfiles = {}; userDiamonds = {};
-            const config = { user: document.getElementById('userIn').value };
-            socket.emit('setTarget', config);
-            toggleMenu();
-            speak("Menghubungkan ke " + config.user);
-        }
-
-        // --- SOCKET LISTENER (FIXED) ---
-        socket.on('memberJoin', (data) => spawnProfile(data, false));
+        // --- SOCKET LISTENER TERPUSAT ---
         
-        socket.on('chat', (data) => { 
+        socket.on('memberJoin', (data) => {
+            spawnProfile(data, false);
+        });
+
+        socket.on('chat', (data) => {
             spawnProfile(data, true); 
-            speak(`${data.nickname} bilang ${data.comment}`); 
+            speak(`${data.nickname} bilang ${data.comment}`);
         });
 
         socket.on('munculFoto', (data) => {
@@ -306,6 +300,18 @@
         socket.on('roomUserList', (list) => {
             if(Array.isArray(list)) list.forEach(u => spawnProfile(u, true));
         });
+
+        function konek() {
+            const user = document.getElementById('userIn').value;
+            if(!user) return alert("Isi Username!");
+            
+            document.querySelectorAll('.photo-el').forEach(el => el.remove());
+            activeProfiles = {}; userDiamonds = {};
+            
+            socket.emit('setTarget', { user: user });
+            toggleMenu();
+            speak("Menghubungkan ke " + user);
+        }
 
         function beli(n, h) { window.open(`https://wa.me/6283815564900?text=Beli Paket ${n}. Email: ${registeredEmail}`, '_blank'); }
     </script>
