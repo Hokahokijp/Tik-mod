@@ -7,88 +7,62 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
-
-app.get('/panel-admin', (req, res) => {
-    res.sendFile(__dirname + '/Panel-1990-aa.html');
-});
+app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
 let tiktokConn;
 
 io.on('connection', (socket) => {
-    
-    // 1. REFRESH VIEWER LIST (Atas permintaan manual frontend)
-    socket.on('refreshViewerList', async () => {
-        try {
-            if (tiktokConn && tiktokConn.getState().isConnected) {
-                let viewerList = await tiktokConn.getViewerList(); 
-                socket.emit('roomUserList', viewerList);
-                console.log("Daftar viewer dikirim ke frontend");
-            }
-        } catch (err) {
-            console.log("Gagal ambil viewer list:", err);
-        }
-    });
-
-    // 2. SET TARGET & KONEKSI TIKTOK
     socket.on('setTarget', (data) => {
         if (tiktokConn) tiktokConn.disconnect();
-        
         tiktokConn = new WebcastPushConnection(data.user);
-        
+
         tiktokConn.connect().then(state => {
-            socket.emit('status', 'OK');
-            
-            // Kirim list viewer awal saat baru konek
-            tiktokConn.getViewerList().then(list => {
-                socket.emit('roomUserList', list);
-            }).catch(e => console.log("Gagal ambil list awal"));
-
+            socket.emit('status', 'Tersambung ke Live!');
         }).catch(err => {
-            socket.emit('status', 'Gagal! Akun tidak Live atau salah username.');
+            socket.emit('status', 'Gagal Konek! Cek Username.');
         });
 
-        // FUNGSI KIRIM DATA KE SEMUA CLIENT
-        const sendPhoto = (dataLive) => {
-            io.emit('munculFoto', { 
-                url: dataLive.profilePictureUrl, 
-                nickname: dataLive.nickname, 
-                uniqueId: dataLive.uniqueId, 
-                giftName: dataLive.giftName || null,
-                diamondCount: dataLive.diamondCount || 0,
-                config: data 
-            });
-        };
+        // LOGIKA CEK OTOMATIS BERDASARKAN GIFT
+        tiktokConn.on('gift', (dataLive) => {
+            let responseTTS = "";
+            const name = dataLive.nickname;
+            const gift = dataLive.giftName;
+            const count = dataLive.repeatCount;
 
-        // EVENT: MEMBER JOIN (Masuk Room)
-        tiktokConn.on('member', (dataLive) => {
-            io.emit('memberJoin', dataLive);
+            // 1. CEK JODOH (MAWAR / ROSE)
+            if (gift === 'Rose') {
+                if (count >= 10) {
+                    responseTTS = `Cek Jodoh Detail untuk ${name}: Jodohmu inisial A, orangnya setia dan ada di kota sebelah.`;
+                } else {
+                    responseTTS = `Cek Jodoh singkat untuk ${name}: Jodohmu sudah dekat, sering-seringlah menoleh.`;
+                }
+            }
+            // 2. CEK REZEKI (DONUT)
+            else if (gift === 'Donut') {
+                if (count >= 5) {
+                    responseTTS = `Cek Rezeki Detail untuk ${name}: Saldo melimpah bulan depan, usaha lancar jaya!`;
+                } else {
+                    responseTTS = `Cek Rezeki untuk ${name}: Rezeki lancar seumpama air mengalir.`;
+                }
+            }
+            // 3. CEK KHODAM (GG)
+            else if (gift === 'GG') {
+                if (count >= 10) {
+                    responseTTS = `Khodam Premium ${name}: Macan putih sakti dari gunung merapi pendamping dirimu.`;
+                } else {
+                    responseTTS = `Khodam ${name}: Khodam kelinci lincah selalu menjagamu.`;
+                }
+            }
+
+            if (responseTTS) io.emit('autoTTS', responseTTS);
+            io.emit('munculFoto', dataLive);
         });
 
-        // EVENT: MEMBER LEAVE (Keluar Room) <-- INI YANG LU MINTA
-        tiktokConn.on('leave', (dataLive) => {
-            io.emit('memberLeave', {
-                uniqueId: dataLive.uniqueId,
-                nickname: dataLive.nickname
-            });
-            console.log(`${dataLive.nickname} keluar room`);
-        });
-
-        // EVENT: AKTIVITAS LAINNYA
-        tiktokConn.on('chat', (dataLive) => {
-            io.emit('chat', dataLive); // Kirim data chat lengkap agar google bisa baca chat-nya
-        });
-        
-        tiktokConn.on('like', sendPhoto);
-        tiktokConn.on('gift', sendPhoto);
-        tiktokConn.on('share', sendPhoto);
-        tiktokConn.on('follow', sendPhoto);
+        tiktokConn.on('chat', (dataLive) => { io.emit('chat', dataLive); });
+        tiktokConn.on('member', (dataLive) => { io.emit('memberJoin', dataLive); });
+        tiktokConn.on('like', (dataLive) => { io.emit('like', dataLive); });
     });
 });
 
-const PORT = process.env.PORT || 8091;
-server.listen(PORT, () => {
-    console.log('Server berjalan di port ' + PORT);
-});
+const PORT = 8091;
+server.listen(PORT, () => { console.log('Server berjalan di port ' + PORT); });
