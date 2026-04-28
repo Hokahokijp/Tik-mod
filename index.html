@@ -2,54 +2,56 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>TikTok Overlay Full Event</title>
+    <title>TikTok Overlay Slider & Bubble</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
-        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; display: flex; align-items: center; justify-content: center; color: white; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 15px; border-radius: 10px; }
-        .hidden { display: none !important; }
-
-        /* SLIDER GIFT (TOP 3) */
-        #gift-slider { position: fixed; top: 10px; right: 10px; width: 250px; z-index: 400; }
-        .slider-item { 
-            display: flex; align-items: center; background: rgba(0,0,0,0.8); 
-            margin-bottom: 5px; padding: 10px; border-radius: 50px; 
-            border: 2px solid gold; transition: all 0.5s ease; color: white;
+        
+        /* SLIDER GIFT KANAN ATAS */
+        #slider-container {
+            position: fixed; top: 10px; right: 10px; width: 280px;
+            display: flex; flex-direction: column; gap: 8px; z-index: 800;
         }
-        .slider-item img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; margin-right: 10px; }
-        .slider-info { flex-grow: 1; font-size: 14px; }
-        .slider-rank { font-weight: bold; margin-right: 10px; color: gold; }
-        .coin-count { color: #ffd700; font-weight: bold; font-size: 12px; }
+        .slider-item {
+            display: flex; align-items: center; background: rgba(0,0,0,0.8);
+            border: 2px solid gold; border-radius: 50px; padding: 5px 15px;
+            color: white; animation: slideIn 0.5s ease; transition: all 0.5s;
+        }
+        .slider-item img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; margin-right: 10px; }
+        .coin-val { color: #ffd700; font-weight: bold; font-size: 14px; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
-        /* VISUAL UNTUK JOIN & LIKE */
+        /* BUBBLE MELAYANG (JOIN/LIKE) */
         .bubble-event {
-            position: absolute; width: 80px; height: 80px; border-radius: 50%;
+            position: absolute; width: 70px; height: 70px; border-radius: 50%;
             border: 3px solid white; background-size: cover;
-            animation: floatUp 3s forwards; z-index: 10;
+            animation: floatUp 4s forwards; z-index: 10;
         }
-        .heart-icon { position: absolute; bottom: -10px; right: -10px; font-size: 30px; }
+        .heart-icon { position: absolute; bottom: -5px; right: -5px; font-size: 25px; }
         @keyframes floatUp {
             0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-            20% { transform: translateY(80vh) scale(1); opacity: 1; }
-            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.1); opacity: 0; }
         }
 
-        /* KARTU CEK KHODAM */
+        /* KARTU TENGAH */
         #card-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
         .kartu {
             background: rgba(0,0,0,0.9); border: 5px solid gold; border-radius: 20px;
             padding: 30px; width: 400px; text-align: center; color: white;
             box-shadow: 0 0 40px gold; display: none; animation: zoom 0.4s ease-out;
         }
+
+        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; display: flex; align-items: center; justify-content: center; color: white; }
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 15px; border-radius: 10px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="gift-slider">
-    </div>
+<div id="slider-container"></div>
 
 <div id="auth-container">
     <div style="background:white; color:black; padding:20px; border-radius:10px; text-align:center; width:280px;">
@@ -100,46 +102,34 @@
         window.speechSynthesis.speak(msg);
     }
 
-    // LOGIKA SLIDER GIFT
-    let topGifts = []; 
-
-    function updateSlider(data) {
-        // Cek apakah user sudah ada di list
-        let userIdx = topGifts.findIndex(g => g.user === data.user);
-        
+    // --- LOGIKA SLIDER GIFT ---
+    let giftData = [];
+    function handleSlider(data) {
+        let userIdx = giftData.findIndex(g => g.user === data.user);
         if (userIdx !== -1) {
-            topGifts[userIdx].diamonds += data.diamonds; // Tambah koin kalo orangnya sama
+            giftData[userIdx].diamonds += data.diamonds;
         } else {
-            topGifts.push({ user: data.user, img: data.img, diamonds: data.diamonds });
+            giftData.push({ user: data.user, img: data.img, diamonds: data.diamonds });
         }
+        
+        // Urutkan koin terbanyak ke atas
+        giftData.sort((a, b) => b.diamonds - a.diamonds);
+        giftData = giftData.slice(0, 3); // Ambil Top 3 aja
 
-        // Urutkan berdasarkan koin terbesar
-        topGifts.sort((a, b) => b.diamonds - a.diamonds);
-
-        // Ambil TOP 3 saja
-        topGifts = topGifts.slice(0, 3);
-
-        renderSlider();
-    }
-
-    function renderSlider() {
-        const container = document.getElementById('gift-slider');
+        const container = document.getElementById('slider-container');
         container.innerHTML = '';
-        topGifts.forEach((g, index) => {
-            const html = `
+        giftData.forEach((g, i) => {
+            container.innerHTML += `
                 <div class="slider-item">
-                    <div class="slider-rank">${index + 1}</div>
+                    <span style="color:gold; font-weight:bold; margin-right:10px;">#${i+1}</span>
                     <img src="${g.img}">
-                    <div class="slider-info">
-                        <div>${g.user}</div>
-                        <div class="coin-count">💰 ${g.diamonds} Coins</div>
-                    </div>
+                    <div style="flex-grow:1; font-size:13px;"><b>${g.user}</b><br><span class="coin-val">💰 ${g.diamonds}</span></div>
                 </div>
             `;
-            container.innerHTML += html;
         });
     }
 
+    // --- EVENT HANDLERS ---
     socket.on('event_visual', (data) => {
         const el = document.createElement('div');
         el.className = 'bubble-event';
@@ -148,19 +138,16 @@
         if (data.type === 'like') {
             el.innerHTML = '<span class="heart-icon">❤️</span>';
             el.style.borderColor = 'red';
-        } else {
-            el.style.borderColor = '#00fff2';
         }
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 3000);
+        setTimeout(() => el.remove(), 4000);
     });
 
     socket.on('chat_masuk', (data) => bicara(`${data.user} bilang ${data.text}`));
 
     socket.on('kartu_cek', (data) => {
-        // Panggil fungsi slider
-        updateSlider({ user: data.user, img: data.img, diamonds: data.diamonds || 1 });
-
+        handleSlider(data); // Masukin ke slider kado terbanyak
+        
         document.getElementById('t_tipe').innerText = data.tipe;
         document.getElementById('t_foto').src = data.img;
         document.getElementById('t_nama').innerText = data.user;
