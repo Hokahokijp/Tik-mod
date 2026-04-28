@@ -2,124 +2,127 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Overlay Cek Khodam</title>
+    <title>TikTok Overlay Lancar Jaya</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; height: 100vh; font-family: sans-serif; }
-        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
-        .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 300px; text-align: center; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
+        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; color: white; }
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 15px; border-radius: 10px; border: 2px solid gold; }
         .hidden { display: none !important; }
-
-        /* KARTU CEK KHODAM */
-        #display-cek { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        #card-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
         .kartu {
-            background: rgba(0, 0, 0, 0.9); border: 5px solid gold; border-radius: 25px;
-            padding: 40px; width: 450px; text-align: center; color: white;
-            box-shadow: 0 0 50px gold; display: none; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(0,0,0,0.9); border: 4px solid gold; border-radius: 20px;
+            padding: 30px; width: 400px; text-align: center; color: white;
+            box-shadow: 0 0 40px gold; display: none; animation: zoom 0.3s ease-out;
         }
-        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
-        .u-foto { width: 120px; height: 120px; border-radius: 50%; border: 4px solid white; margin-bottom: 20px; }
-        .u-tipe { background: gold; color: black; font-weight: bold; padding: 5px 20px; border-radius: 50px; font-size: 20px; display: inline-block; }
-        .u-hasil { font-size: 35px; margin-top: 25px; color: #00fff2; text-shadow: 0 0 10px #00fff2; font-weight: bold; }
+        @keyframes zoom { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="auth-container">
-        <div class="box" id="login-form">
-            <h3>Masuk Akun</h3>
-            <input type="email" id="l-email" placeholder="Email">
-            <input type="password" id="l-pass" placeholder="Password">
-            <button onclick="login()" style="background:#007bff; color:white; border:none; padding:10px; width:100%; border-radius:5px; margin-top:10px;">MASUK</button>
-        </div>
+<div id="auth-container">
+    <div style="background:white; color:black; padding:20px; border-radius:10px; text-align:center;">
+        <h3>Login Admin</h3>
+        <input type="email" id="email" placeholder="Email" style="width:90%; padding:8px; margin-bottom:5px;">
+        <input type="password" id="pass" placeholder="Password" style="width:90%; padding:8px; margin-bottom:10px;">
+        <button onclick="doLogin()" style="width:100%; padding:10px; background:gold; border:none; font-weight:bold;">MASUK</button>
     </div>
+</div>
 
-    <div id="menu" class="hidden">
-        <input type="text" id="userIn" placeholder="Username TikTok">
-        <button onclick="konek()" style="background:#007bff; color:white; width:100%; padding:10px; border:none; border-radius:5px; margin-top:10px;">KONEK LIVE</button>
+<div id="menu" class="hidden">
+    <input type="text" id="target" placeholder="Username TikTok" style="padding:8px;">
+    <button onclick="mulai()" style="padding:8px; background:green; color:white; border:none; border-radius:5px;">KONEK</button>
+</div>
+
+<div id="card-container">
+    <div id="kartu" class="kartu">
+        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; padding:5px; border-radius:5px;">TIPE</div><br>
+        <img id="t_foto" src="" style="width:100px; border-radius:50%; border:3px solid white;"><br>
+        <div id="t_nama" style="font-size:20px; color:gold; margin:10px 0;">@user</div>
+        <div id="t_hasil" style="font-size:28px; font-weight:bold; color:#00fff2;">HASILNYA</div>
     </div>
+</div>
 
-    <div id="display-cek">
-        <div id="kartuCek" class="kartu">
-            <div id="resTipe" class="u-tipe">TIPE CEK</div><br><br>
-            <img id="resFoto" src="" class="u-foto">
-            <div id="resNama" style="font-size:20px; color:gold;">@username</div>
-            <div id="resHasil" class="u-hasil">HASIL RAMALAN</div>
-        </div>
-    </div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // FIREBASE TETAP PAKE PUNYA LU
+    const firebaseConfig = {
+        apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
+        databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const socket = io();
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        // CONFIG FIREBASE ASLI LO
-        const firebaseConfig = {
-            apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
-            authDomain: "sos-pro-cd66d.firebaseapp.com",
-            databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
-            projectId: "sos-pro-cd66d",
-            storageBucket: "sos-pro-cd66d.appspot.com",
-            messagingSenderId: "879343847954",
-            appId: "1:879343847954:web:cc0b959202055fc252e6cb"
+    function doLogin() {
+        firebase.auth().signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value)
+        .then(() => { document.getElementById('auth-container').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); })
+        .catch(() => alert("Gagal!"));
+    }
+
+    // --- MESIN SUARA ANALOG TIKFINITY ---
+    let antreanSuara = [];
+    let sedangNgomong = false;
+
+    function bicara(teks) {
+        antreanSuara.push(teks);
+        if (!sedangNgomong) {
+            prosesAntrean();
+        }
+    }
+
+    function prosesAntrean() {
+        if (antreanSuara.length === 0) {
+            sedangNgomong = false;
+            return;
+        }
+
+        sedangNgomong = true;
+        const msg = new SpeechSynthesisUtterance(antreanSuara.shift());
+        msg.lang = 'id-ID';
+        msg.rate = 1.3; // Kecepatan biar gak numpuk
+        
+        // Paksa browser bangun
+        window.speechSynthesis.resume();
+
+        msg.onend = () => {
+            prosesAntrean();
         };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const socket = io();
 
-        let speechQueue = [];
-        let isSpeaking = false;
+        msg.onerror = () => {
+            window.speechSynthesis.cancel();
+            prosesAntrean();
+        };
 
-        function login() {
-            auth.signInWithEmailAndPassword(document.getElementById('l-email').value, document.getElementById('l-pass').value)
-            .then(() => {
-                document.getElementById('auth-container').classList.add('hidden');
-                document.getElementById('menu').classList.remove('hidden');
-            }).catch(err => alert("Gagal Login!"));
-        }
+        window.speechSynthesis.speak(msg);
+    }
 
-        // FUNGSI TTS DENGAN ANTRIAN (BIAR SEMUA KOMENTAR DIBACA)
-        function speak(text) {
-            speechQueue.push(text);
-            if (!isSpeaking) {
-                processQueue();
-            }
-        }
+    // TANGKAP KOMENTAR
+    socket.on('chat_masuk', (data) => {
+        console.log("Chat:", data.text);
+        bicara(`${data.user} bilang ${data.text}`);
+    });
 
-        function processQueue() {
-            if (speechQueue.length === 0) {
-                isSpeaking = false;
-                return;
-            }
+    // TANGKAP KARTU
+    socket.on('kartu_cek', (data) => {
+        document.getElementById('t_tipe').innerText = data.tipe;
+        document.getElementById('t_foto').src = data.img;
+        document.getElementById('t_nama').innerText = data.user;
+        document.getElementById('t_hasil').innerText = data.hasil;
+        
+        const k = document.getElementById('kartu');
+        k.style.display = 'block';
+        bicara(`${data.user}, hasil ${data.tipe} kamu adalah ${data.hasil}`);
+        
+        setTimeout(() => { k.style.display = 'none'; }, 8000);
+    });
 
-            isSpeaking = true;
-            const ut = new SpeechSynthesisUtterance(speechQueue.shift());
-            ut.lang = 'id-ID';
-            ut.onend = () => { processQueue(); }; // Lanjut baca antrian berikutnya setelah selesai
-            window.speechSynthesis.speak(ut);
-        }
-
-        socket.on('chat', (data) => {
-            speak(`${data.nickname} bilang ${data.comment}`);
-        });
-
-        socket.on('hasilCekKartu', (data) => {
-            const kartu = document.getElementById('kartuCek');
-            document.getElementById('resTipe').innerText = data.tipe;
-            document.getElementById('resFoto').src = data.url;
-            document.getElementById('resNama').innerText = data.nickname;
-            document.getElementById('resHasil').innerText = data.hasil;
-
-            kartu.style.display = 'block';
-            speak(`${data.nickname}, hasil ${data.tipe} kamu adalah ${data.hasil}`);
-            setTimeout(() => { kartu.style.display = 'none'; }, 10000);
-        });
-
-        function konek() {
-            socket.emit('setTarget', { user: document.getElementById('userIn').value });
-            document.getElementById('menu').classList.add('hidden');
-        }
-    </script>
+    function mulai() {
+        socket.emit('setTarget', { user: document.getElementById('target').value });
+        document.getElementById('menu').classList.add('hidden');
+        bicara("Sistem Tikfinity Style diaktifkan. Komentar akan langsung dibaca.");
+    }
+</script>
 </body>
 </html>
