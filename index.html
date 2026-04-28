@@ -2,95 +2,129 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cek Khodam TikTok Live</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TikTok Overlay Premium v2.1</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; font-family: 'Arial Black', sans-serif; }
-        #setup { position: fixed; top: 10px; left: 10px; background: white; padding: 15px; border-radius: 10px; z-index: 999; }
+        body { margin: 0; background: #000; overflow: hidden; height: 100vh; width: 100vw; font-family: sans-serif; }
+        #auth-container, #pay-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; color: white; }
+        .box { background: white; color: black; padding: 20px; border-radius: 15px; width: 300px; text-align: center; }
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow-y: auto; max-height: 80vh; }
+        .hidden { display: none !important; }
         
-        /* Tampilan Hasil Cek */
-        #display-container {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; width: 100vw; text-align: center;
+        /* CSS UNTUK FOTO MEMANTUL */
+        .photo-el { 
+            position: absolute; border-radius: 50%; pointer-events: none; transition: opacity 0.5s; z-index: 50;
+            border: 4px solid transparent; background-size: cover; background-position: center;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5); animation: neon-rotate 3s infinite linear;
         }
 
-        .card-result {
-            background: rgba(0, 0, 0, 0.85);
-            border: 5px solid #ff0055;
-            padding: 30px; border-radius: 20px;
-            color: white; width: 80%; max-width: 600px;
-            box-shadow: 0 0 50px #ff0055;
-            display: none; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* TEXT RAMALAN DI TENGAH */
+        #ramalan-box {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 999; color: gold; font-size: 30px; font-weight: bold; text-align: center;
+            text-shadow: 0 0 20px red; display: none; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 20px;
         }
 
-        @keyframes popIn {
-            from { transform: scale(0); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        @keyframes neon-rotate {
+            0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px #00fff2; }
+            100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px #00fff2; }
         }
 
-        .user-name { color: #00fff2; font-size: 24px; margin-bottom: 10px; }
-        .tipe-cek { background: #ff0055; padding: 5px 15px; border-radius: 50px; font-size: 18px; }
-        .pesan-hasil { font-size: 32px; margin-top: 20px; line-height: 1.2; }
-        .detail-badge { color: gold; font-size: 14px; display: block; margin-top: 10px; border: 1px solid gold; padding: 2px; }
+        .nama-user-tiktok { position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 14px; text-shadow: 2px 2px 4px #000; white-space: nowrap; }
     </style>
 </head>
 <body>
 
-    <div id="setup">
-        <input type="text" id="targetUser" placeholder="Username TikTok Kamu">
-        <button onclick="startKonek()">MULAI CEK</button>
-        <p id="status" style="font-size: 12px; color: gray;">Belum Terhubung</p>
+    <div id="ramalan-box">HASIL CEK AKAN MUNCUL DISINI</div>
+
+    <div id="auth-container">
+        <div class="box" id="login-form">
+            <h3>Masuk Akun</h3>
+            <input type="email" id="l-email" placeholder="Email">
+            <input type="password" id="l-pass" placeholder="Password">
+            <button onclick="login()" style="background:#007bff; color:white;">MASUK</button>
+        </div>
     </div>
 
-    <div id="display-container">
-        <div id="resultCard" class="card-result">
-            <div class="tipe-cek" id="resTipe">TIPE CEK</div>
-            <div class="user-name" id="resUser">NAMA USER</div>
-            <div class="pesan-hasil" id="resPesan">HASIL RAMALAN DISINI</div>
-            <div id="resBadge" class="detail-badge" style="display:none;">PREMIUM DETAIL ✔️</div>
-        </div>
+    <button id="btnT" class="hidden" style="position:fixed; top:10px; left:10px; z-index:101; width:45px; height:45px; border-radius:50%; background:white; font-size:20px; border:none;" onclick="toggleMenu()">⚙️</button>
+    
+    <div id="menu" class="hidden">
+        <input type="text" id="userIn" placeholder="Username TikTok Target">
+        <button onclick="konek()" style="background:#007bff; color:white;">TERAPKAN & KONEK</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // FIREBASE CONFIG TETAP PAKAI PUNYA LU
+        const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(firebaseConfig);
         const socket = io();
-        const card = document.getElementById('resultCard');
+        let activeProfiles = {};
 
-        function startKonek() {
-            const user = document.getElementById('targetUser').value;
-            socket.emit('setTarget', { user: user });
-        }
-
-        socket.on('status', (msg) => {
-            document.getElementById('status').innerText = msg;
-        });
-
-        socket.on('showResult', (data) => {
-            // Isi data ke layar
-            document.getElementById('resTipe').innerText = data.tipe;
-            document.getElementById('resUser').innerText = data.user;
-            document.getElementById('resPesan').innerText = data.pesan;
-            
-            if(data.detail) {
-                document.getElementById('resBadge').style.display = 'block';
-                card.style.borderColor = 'gold';
-                card.style.boxShadow = '0 0 50px gold';
-            } else {
-                document.getElementById('resBadge').style.display = 'none';
-                card.style.borderColor = '#ff0055';
-                card.style.boxShadow = '0 0 50px #ff0055';
-            }
-
-            // Tampilkan Card
-            card.style.display = 'block';
-
-            // Bersuara Google
-            const ut = new SpeechSynthesisUtterance(`${data.user}, hasil ${data.tipe} kamu adalah: ${data.pesan}`);
+        function speak(text) {
+            if (!text) return;
+            window.speechSynthesis.cancel();
+            const ut = new SpeechSynthesisUtterance(text);
             ut.lang = 'id-ID';
             window.speechSynthesis.speak(ut);
+        }
 
-            // Hilang otomatis setelah 10 detik
-            setTimeout(() => { card.style.display = 'none'; }, 10000);
+        function spawnProfile(data, silent = false) {
+            if (activeProfiles[data.uniqueId]) return;
+            const el = document.createElement('div');
+            el.className = 'photo-el';
+            el.style.backgroundImage = `url('${data.profilePictureUrl || data.url}')`;
+            el.style.width = '100px'; el.style.height = '100px';
+            
+            const label = document.createElement('div');
+            label.className = 'nama-user-tiktok';
+            label.innerText = data.nickname || data.uniqueId;
+            el.appendChild(label);
+
+            document.body.appendChild(el);
+            activeProfiles[data.uniqueId] = el;
+            
+            // Logika Memantul
+            let px = Math.random() * window.innerWidth; let py = Math.random() * window.innerHeight;
+            let vx = 3; let vy = 3;
+            function move() {
+                if(!el.parentElement) return;
+                px+=vx; py+=vy;
+                if(px<=0 || px>=window.innerWidth-100) vx*=-1;
+                if(py<=0 || py>=window.innerHeight-100) vy*=-1;
+                el.style.left=px+'px'; el.style.top=py+'px';
+                requestAnimationFrame(move);
+            }
+            move();
+        }
+
+        function konek() {
+            socket.emit('setTarget', { user: document.getElementById('userIn').value });
+            toggleMenu();
+        }
+
+        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
+
+        // EVENT KHUSUS RAMALAN
+        socket.on('hasilRamalan', (msg) => {
+            const box = document.getElementById('ramalan-box');
+            box.innerText = msg;
+            box.style.display = 'block';
+            speak(msg);
+            setTimeout(() => { box.style.display = 'none'; }, 8000);
+        });
+
+        socket.on('munculFoto', (data) => spawnProfile(data, true));
+        socket.on('chat', (data) => { speak(`${data.nickname} bilang ${data.comment}`); });
+        socket.on('memberJoin', (data) => spawnProfile(data));
+        socket.on('memberLeave', (data) => {
+            if(activeProfiles[data.uniqueId]) {
+                document.body.removeChild(activeProfiles[data.uniqueId]);
+                delete activeProfiles[data.uniqueId];
+            }
         });
     </script>
 </body>
