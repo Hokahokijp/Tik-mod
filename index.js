@@ -5,7 +5,7 @@ const { WebcastPushConnection } = require('tiktok-live-connector');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
@@ -16,48 +16,48 @@ io.on('connection', (socket) => {
         if (tiktokConn) tiktokConn.disconnect();
         tiktokConn = new WebcastPushConnection(data.user);
         
-        tiktokConn.connect().then(state => {
-            socket.emit('status', 'OK');
-        }).catch(err => {
-            socket.emit('status', 'Gagal!');
+        tiktokConn.connect().then(() => {
+            socket.emit('status', 'CONNECTED');
+        }).catch(() => {
+            socket.emit('status', 'ERROR');
         });
 
-        // SETIAP CHAT MASUK KIRIM KE FRONTEND
+        // TANGKAP KOMENTAR - LANGSUNG LEMPAR KE FRONTEND
         tiktokConn.on('chat', (dataLive) => {
-            io.emit('chat', {
-                nickname: dataLive.nickname,
-                comment: dataLive.comment
+            io.emit('chat_masuk', {
+                user: dataLive.nickname,
+                text: dataLive.comment
             });
         });
 
-        // LOGIKA CEK HADIAH (KHODAM, JODOH, DLL)
+        // TANGKAP GIFT - CEK KHODAM
         tiktokConn.on('gift', (dataLive) => {
-            let hasilCek = "";
+            let hasil = "";
             let tipe = "";
             const g = dataLive.giftName;
             const c = dataLive.repeatCount;
 
             if (g === 'Rose') {
                 tipe = "CEK JODOH";
-                hasilCek = c >= 10 ? "Detail: Jodohmu inisial A, orang dekat, setia!" : "Singkat: Jodoh sudah dekat.";
-            } else if (g === 'Donut') {
-                tipe = "CEK REZEKI";
-                hasilCek = c >= 5 ? "Detail: Rezeki besar menanti bulan depan!" : "Singkat: Rezeki lancar.";
+                hasil = c >= 10 ? "Jodohmu inisial A, orangnya setia banget!" : "Jodohmu sudah sangat dekat.";
             } else if (g === 'GG') {
                 tipe = "CEK KHODAM";
-                hasilCek = c >= 10 ? "Detail: Khodam Macan Putih Sakti Siliwangi!" : "Singkat: Khodam Kucing Putih.";
+                hasil = c >= 10 ? "Khodam Macan Sakti Prabu Siliwangi!" : "Khodam Kucing Putih Lucu.";
+            } else if (g === 'Donut') {
+                tipe = "CEK REZEKI";
+                hasil = c >= 5 ? "Rezeki nomplok bakal datang besok pagi!" : "Rezeki lancar kayak air.";
             }
 
-            if (tipe !== "") {
-                io.emit('hasilCekKartu', { 
-                    url: dataLive.profilePictureUrl, 
-                    nickname: dataLive.nickname, 
+            if (tipe) {
+                io.emit('kartu_cek', {
+                    img: dataLive.profilePictureUrl,
+                    user: dataLive.nickname,
                     tipe: tipe,
-                    hasil: hasilCek
+                    hasil: hasil
                 });
             }
         });
     });
 });
 
-server.listen(8091, () => { console.log('Server running on 8091'); });
+server.listen(8091, () => { console.log('Server Tikfinity-Style 8091'); });
