@@ -16,9 +16,14 @@ io.on('connection', (socket) => {
         if (tiktokConn) tiktokConn.disconnect();
         tiktokConn = new WebcastPushConnection(data.user);
         
-        tiktokConn.connect().then(() => socket.emit('status', 'OK'));
+        tiktokConn.connect().then(() => {
+            console.log("Tersambung ke:", data.user);
+            socket.emit('status', 'OK');
+        }).catch(err => {
+            socket.emit('status', 'Gagal!');
+        });
 
-        // 1. TANGKAP JOIN (Member Baru Masuk)
+        // 1. TANGKAP JOIN (Foto profil muncul)
         tiktokConn.on('member', (dataLive) => {
             io.emit('event_visual', {
                 type: 'join',
@@ -27,31 +32,30 @@ io.on('connection', (socket) => {
             });
         });
 
-        // 2. TANGKAP LIKE (Tap-tap Layar)
+        // 2. TANGKAP LIKE (Tap-tap layar muncul hati)
         tiktokConn.on('like', (dataLive) => {
             io.emit('event_visual', {
                 type: 'like',
                 user: dataLive.nickname,
                 img: dataLive.profilePictureUrl
-                
-              img: dataLive.profilePictureUrl,
-    user: dataLive.nickname,
-    tipe: tipe,
-    hasil: hasil,
-    diamonds: dataLive.diamondCount * dataLive.repeatCount // Hitung total koin
-                
             });
         });
 
-        // 3. TANGKAP CHAT (Komentar)
+        // 3. TANGKAP CHAT (Google bacain komentar)
         tiktokConn.on('chat', (dataLive) => {
-            io.emit('chat_masuk', { user: dataLive.nickname, text: dataLive.comment });
+            io.emit('chat_masuk', { 
+                user: dataLive.nickname, 
+                text: dataLive.comment 
+            });
         });
 
-        // 4. TANGKAP GIFT (Cek Khodam)
+        // 4. TANGKAP GIFT (Slider & Kartu Cek Khodam)
         tiktokConn.on('gift', (dataLive) => {
-            let hasil = ""; let tipe = "";
-            const g = dataLive.giftName; const c = dataLive.repeatCount;
+            let hasil = ""; 
+            let tipe = "";
+            const g = dataLive.giftName; 
+            const c = dataLive.repeatCount;
+            const d = dataLive.diamondCount; // Koin per gift
 
             if (g === 'Rose') {
                 tipe = "CEK JODOH";
@@ -59,18 +63,33 @@ io.on('connection', (socket) => {
             } else if (g === 'GG') {
                 tipe = "CEK KHODAM";
                 hasil = c >= 10 ? "Khodam Macan Sakti Prabu Siliwangi!" : "Khodam Kucing Putih.";
+            } else if (g === 'Donut') {
+                tipe = "CEK REZEKI";
+                hasil = c >= 5 ? "Rezeki nomplok segera datang!" : "Rezeki lancar terus.";
             }
 
-            if (tipe) {
+            // Kirim data ke HTML untuk Kartu & Slider
+            if (tipe !== "") {
                 io.emit('kartu_cek', {
                     img: dataLive.profilePictureUrl,
                     user: dataLive.nickname,
                     tipe: tipe,
-                    hasil: hasil
+                    hasil: hasil,
+                    diamonds: d * c // TOTAL KOIN buat urutan slider
+                });
+            } else {
+                // Kalo gift lain (bukan buat cek khodam) tetep masuk slider
+                io.emit('kartu_cek', {
+                    img: dataLive.profilePictureUrl,
+                    user: dataLive.nickname,
+                    tipe: "GIFT",
+                    hasil: "Terima kasih kadonya!",
+                    diamonds: d * c
                 });
             }
         });
     });
 });
 
-server.listen(8091, () => console.log('Server Ready Port 8091'));
+const PORT = 8091;
+server.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
