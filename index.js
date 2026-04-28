@@ -7,62 +7,63 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
-
-let tiktokConn;
+app.use(express.static('public')); // Folder untuk file html
 
 io.on('connection', (socket) => {
+    let tiktokConn;
+
     socket.on('setTarget', (data) => {
         if (tiktokConn) tiktokConn.disconnect();
         tiktokConn = new WebcastPushConnection(data.user);
 
         tiktokConn.connect().then(state => {
-            socket.emit('status', 'Tersambung ke Live!');
+            socket.emit('status', 'Berhasil Konek ke ' + data.user);
         }).catch(err => {
-            socket.emit('status', 'Gagal Konek! Cek Username.');
+            socket.emit('status', 'Gagal: Akun tidak Live.');
         });
 
-        // LOGIKA CEK OTOMATIS BERDASARKAN GIFT
         tiktokConn.on('gift', (dataLive) => {
-            let responseTTS = "";
-            const name = dataLive.nickname;
-            const gift = dataLive.giftName;
-            const count = dataLive.repeatCount;
+            const { nickname, giftName, repeatCount, uniqueId } = dataLive;
+            let hasil = { user: nickname, tipe: "", pesan: "", detail: false };
 
-            // 1. CEK JODOH (MAWAR / ROSE)
-            if (gift === 'Rose') {
-                if (count >= 10) {
-                    responseTTS = `Cek Jodoh Detail untuk ${name}: Jodohmu inisial A, orangnya setia dan ada di kota sebelah.`;
+            // LOGIKA CEK JODOH (1 MAWAR & 10 MAWAR)
+            if (giftName === 'Rose') {
+                hasil.tipe = "CEK JODOH";
+                if (repeatCount >= 10) {
+                    hasil.pesan = "Jodohmu adalah inisial 'S', tinggal di Jawa Barat, sifatnya penyayang dan segera bertemu bulan depan!";
+                    hasil.detail = true;
                 } else {
-                    responseTTS = `Cek Jodoh singkat untuk ${name}: Jodohmu sudah dekat, sering-seringlah menoleh.`;
+                    hasil.pesan = "Jodohmu sudah dekat, tapi kamu masih sering cuek.";
                 }
             }
-            // 2. CEK REZEKI (DONUT)
-            else if (gift === 'Donut') {
-                if (count >= 5) {
-                    responseTTS = `Cek Rezeki Detail untuk ${name}: Saldo melimpah bulan depan, usaha lancar jaya!`;
+            
+            // LOGIKA CEK KHODAM (1 GG & 10 GG)
+            else if (giftName === 'GG') {
+                hasil.tipe = "CEK KHODAM";
+                if (repeatCount >= 10) {
+                    hasil.pesan = "Khodam: MACAN PUTIH PRABU SILIWANGI. Power: 100%. Melindungimu dari energi negatif.";
+                    hasil.detail = true;
                 } else {
-                    responseTTS = `Cek Rezeki untuk ${name}: Rezeki lancar seumpama air mengalir.`;
-                }
-            }
-            // 3. CEK KHODAM (GG)
-            else if (gift === 'GG') {
-                if (count >= 10) {
-                    responseTTS = `Khodam Premium ${name}: Macan putih sakti dari gunung merapi pendamping dirimu.`;
-                } else {
-                    responseTTS = `Khodam ${name}: Khodam kelinci lincah selalu menjagamu.`;
+                    hasil.pesan = "Khodam: Kucing Oren Sakti. Power: 10%.";
                 }
             }
 
-            if (responseTTS) io.emit('autoTTS', responseTTS);
-            io.emit('munculFoto', dataLive);
+            // LOGIKA CEK REZEKI (1 DONAT & 5 DONAT)
+            else if (giftName === 'Donut') {
+                hasil.tipe = "CEK REZEKI";
+                if (repeatCount >= 5) {
+                    hasil.pesan = "Rezeki Gede! Akan ada proyek besar atau hadiah tak terduga dalam 7 hari ke depan.";
+                    hasil.detail = true;
+                } else {
+                    hasil.pesan = "Rezeki lancar, jangan lupa sedekah.";
+                }
+            }
+
+            if (hasil.tipe !== "") {
+                io.emit('showResult', hasil);
+            }
         });
-
-        tiktokConn.on('chat', (dataLive) => { io.emit('chat', dataLive); });
-        tiktokConn.on('member', (dataLive) => { io.emit('memberJoin', dataLive); });
-        tiktokConn.on('like', (dataLive) => { io.emit('like', dataLive); });
     });
 });
 
-const PORT = 8091;
-server.listen(PORT, () => { console.log('Server berjalan di port ' + PORT); });
+server.listen(8091, () => console.log('Web Cek Khodam running on port 8091'));
