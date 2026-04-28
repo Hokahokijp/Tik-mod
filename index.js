@@ -33,6 +33,13 @@ io.on('connection', (socket) => {
                 type: 'like',
                 user: dataLive.nickname,
                 img: dataLive.profilePictureUrl
+                
+              img: dataLive.profilePictureUrl,
+    user: dataLive.nickname,
+    tipe: tipe,
+    hasil: hasil,
+    diamonds: dataLive.diamondCount * dataLive.repeatCount // Hitung total koin
+                
             });
         });
 
