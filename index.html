@@ -12,6 +12,18 @@
         #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 15px; border-radius: 10px; }
         .hidden { display: none !important; }
 
+        /* SLIDER GIFT (TOP 3) */
+        #gift-slider { position: fixed; top: 10px; right: 10px; width: 250px; z-index: 400; }
+        .slider-item { 
+            display: flex; align-items: center; background: rgba(0,0,0,0.8); 
+            margin-bottom: 5px; padding: 10px; border-radius: 50px; 
+            border: 2px solid gold; transition: all 0.5s ease; color: white;
+        }
+        .slider-item img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; margin-right: 10px; }
+        .slider-info { flex-grow: 1; font-size: 14px; }
+        .slider-rank { font-weight: bold; margin-right: 10px; color: gold; }
+        .coin-count { color: #ffd700; font-weight: bold; font-size: 12px; }
+
         /* VISUAL UNTUK JOIN & LIKE */
         .bubble-event {
             position: absolute; width: 80px; height: 80px; border-radius: 50%;
@@ -35,6 +47,9 @@
     </style>
 </head>
 <body>
+
+<div id="gift-slider">
+    </div>
 
 <div id="auth-container">
     <div style="background:white; color:black; padding:20px; border-radius:10px; text-align:center; width:280px;">
@@ -61,7 +76,6 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // FIREBASE TETAP PAKE PUNYA LU
     const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig);
     const socket = io();
@@ -80,26 +94,63 @@
     function prosesAntrean() {
         if (antreanSuara.length === 0) { sedangNgomong = false; return; }
         sedangNgomong = true;
-        window.speechSynthesis.cancel(); // Potong yang lama biar responsif
+        window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(antreanSuara.shift());
         msg.lang = 'id-ID'; msg.onend = () => prosesAntrean();
         window.speechSynthesis.speak(msg);
     }
 
-    // VISUAL JOIN & LIKE
+    // LOGIKA SLIDER GIFT
+    let topGifts = []; 
+
+    function updateSlider(data) {
+        // Cek apakah user sudah ada di list
+        let userIdx = topGifts.findIndex(g => g.user === data.user);
+        
+        if (userIdx !== -1) {
+            topGifts[userIdx].diamonds += data.diamonds; // Tambah koin kalo orangnya sama
+        } else {
+            topGifts.push({ user: data.user, img: data.img, diamonds: data.diamonds });
+        }
+
+        // Urutkan berdasarkan koin terbesar
+        topGifts.sort((a, b) => b.diamonds - a.diamonds);
+
+        // Ambil TOP 3 saja
+        topGifts = topGifts.slice(0, 3);
+
+        renderSlider();
+    }
+
+    function renderSlider() {
+        const container = document.getElementById('gift-slider');
+        container.innerHTML = '';
+        topGifts.forEach((g, index) => {
+            const html = `
+                <div class="slider-item">
+                    <div class="slider-rank">${index + 1}</div>
+                    <img src="${g.img}">
+                    <div class="slider-info">
+                        <div>${g.user}</div>
+                        <div class="coin-count">💰 ${g.diamonds} Coins</div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+    }
+
     socket.on('event_visual', (data) => {
         const el = document.createElement('div');
         el.className = 'bubble-event';
         el.style.backgroundImage = `url('${data.img}')`;
-        el.style.left = Math.random() * 80 + '%'; // Posisi acak horizontal
-        
+        el.style.left = Math.random() * 80 + '%';
         if (data.type === 'like') {
             el.innerHTML = '<span class="heart-icon">❤️</span>';
             el.style.borderColor = 'red';
         } else {
             el.style.borderColor = '#00fff2';
         }
-
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 3000);
     });
@@ -107,6 +158,9 @@
     socket.on('chat_masuk', (data) => bicara(`${data.user} bilang ${data.text}`));
 
     socket.on('kartu_cek', (data) => {
+        // Panggil fungsi slider
+        updateSlider({ user: data.user, img: data.img, diamonds: data.diamonds || 1 });
+
         document.getElementById('t_tipe').innerText = data.tipe;
         document.getElementById('t_foto').src = data.img;
         document.getElementById('t_nama').innerText = data.user;
