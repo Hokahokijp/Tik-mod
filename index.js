@@ -7,63 +7,45 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static('public')); // Folder untuk file html
+app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
+
+let tiktokConn;
 
 io.on('connection', (socket) => {
-    let tiktokConn;
-
     socket.on('setTarget', (data) => {
         if (tiktokConn) tiktokConn.disconnect();
         tiktokConn = new WebcastPushConnection(data.user);
-
+        
         tiktokConn.connect().then(state => {
-            socket.emit('status', 'Berhasil Konek ke ' + data.user);
+            socket.emit('status', 'OK');
         }).catch(err => {
-            socket.emit('status', 'Gagal: Akun tidak Live.');
+            socket.emit('status', 'Gagal! Akun tidak Live.');
         });
 
         tiktokConn.on('gift', (dataLive) => {
-            const { nickname, giftName, repeatCount, uniqueId } = dataLive;
-            let hasil = { user: nickname, tipe: "", pesan: "", detail: false };
+            // LOGIKA CEK HADIAH
+            let hasilCek = "";
+            const { giftName, repeatCount, nickname } = dataLive;
 
-            // LOGIKA CEK JODOH (1 MAWAR & 10 MAWAR)
             if (giftName === 'Rose') {
-                hasil.tipe = "CEK JODOH";
-                if (repeatCount >= 10) {
-                    hasil.pesan = "Jodohmu adalah inisial 'S', tinggal di Jawa Barat, sifatnya penyayang dan segera bertemu bulan depan!";
-                    hasil.detail = true;
-                } else {
-                    hasil.pesan = "Jodohmu sudah dekat, tapi kamu masih sering cuek.";
-                }
-            }
-            
-            // LOGIKA CEK KHODAM (1 GG & 10 GG)
-            else if (giftName === 'GG') {
-                hasil.tipe = "CEK KHODAM";
-                if (repeatCount >= 10) {
-                    hasil.pesan = "Khodam: MACAN PUTIH PRABU SILIWANGI. Power: 100%. Melindungimu dari energi negatif.";
-                    hasil.detail = true;
-                } else {
-                    hasil.pesan = "Khodam: Kucing Oren Sakti. Power: 10%.";
-                }
+                hasilCek = repeatCount >= 10 ? `${nickname}, Jodohmu detail: Inisial A, setia, orang dekat!` : `${nickname}, Jodohmu sudah ada tapi kamu cuek.`;
+            } else if (giftName === 'Donut') {
+                hasilCek = repeatCount >= 5 ? `${nickname}, Rezeki detail: Bulan depan ada uang kaget melimpah!` : `${nickname}, Rezeki lancar aman terkendali.`;
+            } else if (giftName === 'GG') {
+                hasilCek = repeatCount >= 10 ? `${nickname}, Khodam detail: Macan Putih Prabu Siliwangi sakti!` : `${nickname}, Khodam kamu: Kelinci Hitam.`;
+            } else if (giftName === 'Cornetto') { // Asmara
+                hasilCek = repeatCount >= 7 ? `${nickname}, Asmara detail: Dia sangat mencintaimu dan mau serius.` : `${nickname}, Asmara: Dia lagi kangen kamu.`;
             }
 
-            // LOGIKA CEK REZEKI (1 DONAT & 5 DONAT)
-            else if (giftName === 'Donut') {
-                hasil.tipe = "CEK REZEKI";
-                if (repeatCount >= 5) {
-                    hasil.pesan = "Rezeki Gede! Akan ada proyek besar atau hadiah tak terduga dalam 7 hari ke depan.";
-                    hasil.detail = true;
-                } else {
-                    hasil.pesan = "Rezeki lancar, jangan lupa sedekah.";
-                }
-            }
-
-            if (hasil.tipe !== "") {
-                io.emit('showResult', hasil);
-            }
+            if (hasilCek) io.emit('hasilRamalan', hasilCek);
+            io.emit('munculFoto', dataLive);
         });
+
+        tiktokConn.on('chat', (dataLive) => { io.emit('chat', dataLive); });
+        tiktokConn.on('member', (dataLive) => { io.emit('memberJoin', dataLive); });
+        tiktokConn.on('leave', (dataLive) => { io.emit('memberLeave', dataLive); });
+        tiktokConn.on('like', (dataLive) => { io.emit('munculFoto', dataLive); });
     });
 });
 
-server.listen(8091, () => console.log('Web Cek Khodam running on port 8091'));
+server.listen(8091, () => { console.log('Server running on 8091'); });
