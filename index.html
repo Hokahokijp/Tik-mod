@@ -2,138 +2,126 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bubble Chat Overlay</title>
+    <title>TikTok Overlay Full Event</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
+        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; display: flex; align-items: center; justify-content: center; color: white; }
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 15px; border-radius: 10px; }
         .hidden { display: none !important; }
-        
-        /* Foto Profil Melayang */
-        .photo-el { 
-            position: absolute; width: 70px; height: 70px; 
-            border-radius: 50%; background-size: cover; 
-            border: 3px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            z-index: 10; transition: transform 0.2s;
+
+        /* VISUAL UNTUK JOIN & LIKE */
+        .bubble-event {
+            position: absolute; width: 80px; height: 80px; border-radius: 50%;
+            border: 3px solid white; background-size: cover;
+            animation: floatUp 3s forwards; z-index: 10;
+        }
+        .heart-icon { position: absolute; bottom: -10px; right: -10px; font-size: 30px; }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+            20% { transform: translateY(80vh) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
         }
 
-        /* Bubble Chat Keren */
-        .bubble {
-            position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95); color: #333;
-            padding: 8px 12px; border-radius: 15px; font-size: 12px;
-            font-weight: bold; width: 120px; text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            border: 1px solid #ddd; word-wrap: break-word;
-            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        /* KARTU CEK KHODAM */
+        #card-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        .kartu {
+            background: rgba(0,0,0,0.9); border: 5px solid gold; border-radius: 20px;
+            padding: 30px; width: 400px; text-align: center; color: white;
+            box-shadow: 0 0 40px gold; display: none; animation: zoom 0.4s ease-out;
         }
-        .bubble::after {
-            content: ''; position: absolute; bottom: -8px; left: 50%;
-            transform: translateX(-50%); border-width: 8px 8px 0;
-            border-style: solid; border-color: rgba(255, 255, 255, 0.95) transparent transparent;
-        }
-
-        .nama-user {
-            position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.7); color: #fff; font-size: 10px;
-            padding: 2px 8px; border-radius: 10px; white-space: nowrap;
-        }
-
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 100; background: white; padding: 15px; border-radius: 10px; width: 200px; }
-        input { width: 100%; padding: 8px; margin: 10px 0; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <button id="btnT" style="position:fixed; top:10px; left:10px; z-index:101; border-radius:50%; width:40px; height:40px;" onclick="toggleMenu()">⚙️</button>
-    <div id="menu" class="hidden">
-        <input type="text" id="userIn" placeholder="Username TikTok">
-        <button onclick="konek()">KONEK BUBBLE</button>
+<div id="auth-container">
+    <div style="background:white; color:black; padding:20px; border-radius:10px; text-align:center; width:280px;">
+        <h3>Admin Login</h3>
+        <input type="email" id="email" placeholder="Email" style="width:90%; padding:8px; margin-bottom:5px;">
+        <input type="password" id="pass" placeholder="Password" style="width:90%; padding:8px; margin-bottom:10px;">
+        <button onclick="doLogin()" style="width:100%; padding:10px; background:gold; border:none; font-weight:bold;">MASUK</button>
     </div>
+</div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let activeProfiles = {};
+<div id="menu" class="hidden">
+    <input type="text" id="target" placeholder="Username TikTok">
+    <button onclick="mulai()" style="background:green; color:white; border:none; padding:8px;">KONEK</button>
+</div>
 
-        function spawnProfile(data, message = null) {
-            let el = activeProfiles[data.uniqueId];
+<div id="card-container">
+    <div id="kartu" class="kartu">
+        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; padding:5px; border-radius:5px;">TIPE</div><br>
+        <img id="t_foto" src="" style="width:100px; border-radius:50%; border:3px solid white;"><br>
+        <div id="t_nama" style="font-size:20px; color:gold; margin:10px 0;">@user</div>
+        <div id="t_hasil" style="font-size:28px; font-weight:bold; color:#00fff2;">HASILNYA</div>
+    </div>
+</div>
 
-            if (!el) {
-                // Buat Elemen Baru jika belum ada
-                el = document.createElement('div');
-                el.className = 'photo-el';
-                el.style.backgroundImage = `url('${data.profilePictureUrl || data.url}')`;
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // FIREBASE TETAP PAKE PUNYA LU
+    const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com" };
+    firebase.initializeApp(firebaseConfig);
+    const socket = io();
 
-                const bbl = document.createElement('div');
-                bbl.className = 'bubble';
-                el.appendChild(bbl);
+    function doLogin() {
+        firebase.auth().signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value)
+        .then(() => { document.getElementById('auth-container').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); });
+    }
 
-                const nm = document.createElement('div');
-                nm.className = 'nama-user';
-                nm.innerText = data.nickname || data.uniqueId;
-                el.appendChild(nm);
+    // --- SISTEM SUARA ---
+    let antreanSuara = []; let sedangNgomong = false;
+    function bicara(teks) {
+        antreanSuara.push(teks);
+        if (!sedangNgomong) prosesAntrean();
+    }
+    function prosesAntrean() {
+        if (antreanSuara.length === 0) { sedangNgomong = false; return; }
+        sedangNgomong = true;
+        window.speechSynthesis.cancel(); // Potong yang lama biar responsif
+        const msg = new SpeechSynthesisUtterance(antreanSuara.shift());
+        msg.lang = 'id-ID'; msg.onend = () => prosesAntrean();
+        window.speechSynthesis.speak(msg);
+    }
 
-                document.body.appendChild(el);
-                activeProfiles[data.uniqueId] = el;
-
-                // Logic Gerak (Sesuaikan Layar HP)
-                let px = Math.random() * (window.innerWidth - 80);
-                let py = Math.random() * (window.innerHeight - 120);
-                let vx = (Math.random() - 0.5) * 2;
-                let vy = (Math.random() - 0.5) * 2;
-
-                function move() {
-                    if (!el.parentElement) return;
-                    px += vx; py += vy;
-                    if (px <= 0 || px >= window.innerWidth - 80) vx *= -1;
-                    if (py <= 40 || py >= window.innerHeight - 120) vy *= -1;
-                    el.style.left = px + 'px'; el.style.top = py + 'px';
-                    requestAnimationFrame(move);
-                }
-                move();
-            }
-
-            // Jika ada pesan (Chat/Gift), munculkan Bubble
-            if (message) {
-                const bbl = el.querySelector('.bubble');
-                bbl.innerText = message;
-                bbl.style.opacity = '1';
-                
-                // Bubble hilang otomatis setelah 4 detik
-                clearTimeout(el.bubbleTimer);
-                el.bubbleTimer = setTimeout(() => { bbl.style.opacity = '0'; }, 4000);
-            }
-        }
-
-        socket.on('memberJoin', d => spawnProfile(d, "Hadir Bang!"));
-        socket.on('chat', d => spawnProfile(d, d.comment));
-        socket.on('munculFoto', d => spawnProfile(d, `Kasih ${d.giftName}! 🎁`));
+    // VISUAL JOIN & LIKE
+    socket.on('event_visual', (data) => {
+        const el = document.createElement('div');
+        el.className = 'bubble-event';
+        el.style.backgroundImage = `url('${data.img}')`;
+        el.style.left = Math.random() * 80 + '%'; // Posisi acak horizontal
         
-        socket.on('memberLeave', d => {
-            if (activeProfiles[d.uniqueId]) {
-                activeProfiles[d.uniqueId].remove();
-                delete activeProfiles[d.uniqueId];
-            }
-        });
-
-        socket.on('connect', () => {
-            const user = document.getElementById('userIn').value;
-            if(user) socket.emit('setTarget', { user: user });
-        });
-
-        function konek() {
-            const u = document.getElementById('userIn').value;
-            if(!u) return;
-            document.querySelectorAll('.photo-el').forEach(e => e.remove());
-            activeProfiles = {};
-            socket.emit('setTarget', { user: u });
-            toggleMenu();
+        if (data.type === 'like') {
+            el.innerHTML = '<span class="heart-icon">❤️</span>';
+            el.style.borderColor = 'red';
+        } else {
+            el.style.borderColor = '#00fff2';
         }
 
-        function toggleMenu() { document.getElementById('menu').classList.toggle('hidden'); }
-    </script>
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    });
+
+    socket.on('chat_masuk', (data) => bicara(`${data.user} bilang ${data.text}`));
+
+    socket.on('kartu_cek', (data) => {
+        document.getElementById('t_tipe').innerText = data.tipe;
+        document.getElementById('t_foto').src = data.img;
+        document.getElementById('t_nama').innerText = data.user;
+        document.getElementById('t_hasil').innerText = data.hasil;
+        const k = document.getElementById('kartu');
+        k.style.display = 'block';
+        bicara(`${data.user}, hasil ${data.tipe} kamu adalah ${data.hasil}`);
+        setTimeout(() => k.style.display = 'none', 8000);
+    });
+
+    function mulai() {
+        socket.emit('setTarget', { user: document.getElementById('target').value });
+        document.getElementById('menu').classList.add('hidden');
+        bicara("Sistem aktif.");
+    }
+</script>
 </body>
 </html>
