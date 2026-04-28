@@ -2,50 +2,54 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>TikTok Overlay Slider & Bubble</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Overlay HP Style</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; width: 100vw; height: 100vh; }
         
-        /* SLIDER GIFT KANAN ATAS */
+        /* SLIDER GIFT (TOP 3) - Pas buat layar HP */
         #slider-container {
-            position: fixed; top: 10px; right: 10px; width: 280px;
-            display: flex; flex-direction: column; gap: 8px; z-index: 800;
+            position: fixed; top: 10px; right: 10px; width: 220px;
+            display: flex; flex-direction: column; gap: 5px; z-index: 800;
         }
         .slider-item {
             display: flex; align-items: center; background: rgba(0,0,0,0.8);
-            border: 2px solid gold; border-radius: 50px; padding: 5px 15px;
-            color: white; animation: slideIn 0.5s ease; transition: all 0.5s;
+            border: 2px solid gold; border-radius: 30px; padding: 5px 10px;
+            color: white; animation: slideIn 0.5s ease;
         }
-        .slider-item img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; margin-right: 10px; }
-        .coin-val { color: #ffd700; font-weight: bold; font-size: 14px; }
+        .slider-item img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid white; margin-right: 8px; }
+        .slider-info { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* BUBBLE MELAYANG ACAK */
+        .bubble-event {
+            position: absolute; width: 60px; height: 60px; border-radius: 50%;
+            border: 2px solid white; background-size: cover;
+            animation: floatRandom 5s linear forwards; z-index: 10;
+        }
+        .heart-icon { position: absolute; bottom: -5px; right: -5px; font-size: 20px; }
+
+        @keyframes floatRandom {
+            0% { transform: translate(0, 100vh) scale(0.5); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translate(var(--moveX), -10vh) scale(1.2); opacity: 0; }
+        }
+
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
-        /* BUBBLE MELAYANG (JOIN/LIKE) */
-        .bubble-event {
-            position: absolute; width: 70px; height: 70px; border-radius: 50%;
-            border: 3px solid white; background-size: cover;
-            animation: floatUp 4s forwards; z-index: 10;
-        }
-        .heart-icon { position: absolute; bottom: -5px; right: -5px; font-size: 25px; }
-        @keyframes floatUp {
-            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-            20% { opacity: 1; }
-            100% { transform: translateY(-100px) scale(1.1); opacity: 0; }
-        }
-
         /* KARTU TENGAH */
-        #card-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        #card-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; padding: 20px; }
         .kartu {
-            background: rgba(0,0,0,0.9); border: 5px solid gold; border-radius: 20px;
-            padding: 30px; width: 400px; text-align: center; color: white;
-            box-shadow: 0 0 40px gold; display: none; animation: zoom 0.4s ease-out;
+            background: rgba(0,0,0,0.9); border: 4px solid gold; border-radius: 15px;
+            padding: 20px; width: 100%; max-width: 320px; text-align: center; color: white;
+            box-shadow: 0 0 20px gold; display: none; animation: zoom 0.4s ease-out;
         }
+        @keyframes zoom { from { transform: scale(0.5); } to { transform: scale(1); } }
 
-        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; display: flex; align-items: center; justify-content: center; color: white; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 15px; border-radius: 10px; }
+        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 999; display: flex; align-items: center; justify-content: center; }
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 10px; border-radius: 8px; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -54,25 +58,25 @@
 <div id="slider-container"></div>
 
 <div id="auth-container">
-    <div style="background:white; color:black; padding:20px; border-radius:10px; text-align:center; width:280px;">
-        <h3>Admin Login</h3>
-        <input type="email" id="email" placeholder="Email" style="width:90%; padding:8px; margin-bottom:5px;">
+    <div style="background:white; padding:20px; border-radius:10px; text-align:center; width:80%;">
+        <h3>Login</h3>
+        <input type="email" id="email" placeholder="Email" style="width:90%; padding:8px; margin-bottom:10px;">
         <input type="password" id="pass" placeholder="Password" style="width:90%; padding:8px; margin-bottom:10px;">
-        <button onclick="doLogin()" style="width:100%; padding:10px; background:gold; border:none; font-weight:bold;">MASUK</button>
+        <button onclick="doLogin()" style="width:100%; padding:10px; background:gold; border:none;">MASUK</button>
     </div>
 </div>
 
 <div id="menu" class="hidden">
-    <input type="text" id="target" placeholder="Username TikTok">
-    <button onclick="mulai()" style="background:green; color:white; border:none; padding:8px;">KONEK</button>
+    <input type="text" id="target" placeholder="User TikTok" style="width:100px;">
+    <button onclick="mulai()">KONEK</button>
 </div>
 
 <div id="card-container">
     <div id="kartu" class="kartu">
-        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; padding:5px; border-radius:5px;">TIPE</div><br>
-        <img id="t_foto" src="" style="width:100px; border-radius:50%; border:3px solid white;"><br>
-        <div id="t_nama" style="font-size:20px; color:gold; margin:10px 0;">@user</div>
-        <div id="t_hasil" style="font-size:28px; font-weight:bold; color:#00fff2;">HASILNYA</div>
+        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; padding:3px; border-radius:5px; font-size:12px;">TIPE</div><br>
+        <img id="t_foto" src="" style="width:80px; border-radius:50%; border:2px solid white;"><br>
+        <div id="t_nama" style="font-size:16px; color:gold; margin:5px 0;">@user</div>
+        <div id="t_hasil" style="font-size:22px; font-weight:bold; color:#00fff2;">HASILNYA</div>
     </div>
 </div>
 
@@ -102,51 +106,49 @@
         window.speechSynthesis.speak(msg);
     }
 
-    // --- LOGIKA SLIDER GIFT ---
-    let giftData = [];
-    function handleSlider(data) {
-        let userIdx = giftData.findIndex(g => g.user === data.user);
-        if (userIdx !== -1) {
-            giftData[userIdx].diamonds += data.diamonds;
-        } else {
-            giftData.push({ user: data.user, img: data.img, diamonds: data.diamonds });
-        }
+    // --- SLIDER LOGIC ---
+    let topGifts = [];
+    function updateSlider(data) {
+        let userIdx = topGifts.findIndex(g => g.user === data.user);
+        if (userIdx !== -1) { topGifts[userIdx].diamonds += data.diamonds; }
+        else { topGifts.push({ user: data.user, img: data.img, diamonds: data.diamonds }); }
         
-        // Urutkan koin terbanyak ke atas
-        giftData.sort((a, b) => b.diamonds - a.diamonds);
-        giftData = giftData.slice(0, 3); // Ambil Top 3 aja
+        topGifts.sort((a, b) => b.diamonds - a.diamonds);
+        topGifts = topGifts.slice(0, 3);
 
         const container = document.getElementById('slider-container');
         container.innerHTML = '';
-        giftData.forEach((g, i) => {
+        topGifts.forEach((g, i) => {
             container.innerHTML += `
                 <div class="slider-item">
-                    <span style="color:gold; font-weight:bold; margin-right:10px;">#${i+1}</span>
+                    <span style="color:gold; font-weight:bold; margin-right:5px;">#${i+1}</span>
                     <img src="${g.img}">
-                    <div style="flex-grow:1; font-size:13px;"><b>${g.user}</b><br><span class="coin-val">💰 ${g.diamonds}</span></div>
-                </div>
-            `;
+                    <div class="slider-info"><b>${g.user}</b><br>💰 ${g.diamonds}</div>
+                </div>`;
         });
     }
 
-    // --- EVENT HANDLERS ---
+    // --- VISUAL HANDLERS ---
     socket.on('event_visual', (data) => {
         const el = document.createElement('div');
         el.className = 'bubble-event';
         el.style.backgroundImage = `url('${data.img}')`;
-        el.style.left = Math.random() * 80 + '%';
+        el.style.left = (Math.random() * 70 + 10) + '%';
+        // Kasih variabel random biar melayangnya acak ke kiri/kanan
+        el.style.setProperty('--moveX', (Math.random() * 200 - 100) + 'px');
+        
         if (data.type === 'like') {
             el.innerHTML = '<span class="heart-icon">❤️</span>';
             el.style.borderColor = 'red';
         }
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 4000);
+        setTimeout(() => el.remove(), 5000);
     });
 
     socket.on('chat_masuk', (data) => bicara(`${data.user} bilang ${data.text}`));
 
     socket.on('kartu_cek', (data) => {
-        handleSlider(data); // Masukin ke slider kado terbanyak
+        if (data.diamonds > 0) updateSlider(data);
         
         document.getElementById('t_tipe').innerText = data.tipe;
         document.getElementById('t_foto').src = data.img;
@@ -154,7 +156,7 @@
         document.getElementById('t_hasil').innerText = data.hasil;
         const k = document.getElementById('kartu');
         k.style.display = 'block';
-        bicara(`${data.user}, hasil ${data.tipe} kamu adalah ${data.hasil}`);
+        bicara(`${data.user}, ${data.hasil}`);
         setTimeout(() => k.style.display = 'none', 8000);
     });
 
