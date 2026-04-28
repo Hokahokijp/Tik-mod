@@ -15,6 +15,7 @@ io.on('connection', (socket) => {
     socket.on('setTarget', (data) => {
         if (tiktokConn) tiktokConn.disconnect();
         tiktokConn = new WebcastPushConnection(data.user);
+        
         tiktokConn.connect().then(() => socket.emit('status', 'OK'));
 
         tiktokConn.on('member', (dataLive) => {
@@ -33,7 +34,7 @@ io.on('connection', (socket) => {
             let hasil = ""; let tipe = "";
             const g = dataLive.giftName; 
             const c = dataLive.repeatCount;
-            const d = dataLive.diamondCount;
+            const d = dataLive.diamondCount; // Ambil koin kado
 
             if (g === 'Rose') {
                 tipe = "CEK JODOH";
@@ -49,7 +50,7 @@ io.on('connection', (socket) => {
                     user: dataLive.nickname,
                     tipe: tipe,
                     hasil: hasil,
-                    diamonds: d * c // Buat slider
+                    diamonds: d * c // Kirim total koin ke slider
                 });
             }
         });
