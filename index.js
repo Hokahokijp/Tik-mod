@@ -16,9 +16,8 @@ io.on('connection', (socket) => {
         if (tiktokConn) tiktokConn.disconnect();
         tiktokConn = new WebcastPushConnection(data.user);
         
-        tiktokConn.connect().then(() => socket.emit('status', 'OK')).catch(() => socket.emit('status', 'Gagal'));
+        tiktokConn.connect().then(() => socket.emit('status', 'OK'));
 
-        // JOIN & LIKE (Melayang sebagai bubble)
         tiktokConn.on('member', (dataLive) => {
             io.emit('event_visual', { type: 'join', user: dataLive.nickname, img: dataLive.profilePictureUrl });
         });
@@ -31,11 +30,9 @@ io.on('connection', (socket) => {
             io.emit('chat_masuk', { user: dataLive.nickname, text: dataLive.comment });
         });
 
-        // GIFT (Masuk Slider + Kartu Cek Khodam)
         tiktokConn.on('gift', (dataLive) => {
             let hasil = ""; let tipe = "";
-            const g = dataLive.giftName; 
-            const c = dataLive.repeatCount;
+            const g = dataLive.giftName; const c = dataLive.repeatCount;
             const d = dataLive.diamondCount;
 
             if (g === 'Rose') {
@@ -44,17 +41,15 @@ io.on('connection', (socket) => {
             } else if (g === 'GG') {
                 tipe = "CEK KHODAM";
                 hasil = c >= 10 ? "Khodam Macan Sakti Prabu Siliwangi!" : "Khodam Kucing Putih.";
-            } else {
-                tipe = "GIFT";
-                hasil = "Terima kasih atas hadiahnya!";
             }
 
+            // Kirim ke frontend termasuk data koin untuk slider
             io.emit('kartu_cek', {
                 img: dataLive.profilePictureUrl,
                 user: dataLive.nickname,
-                tipe: tipe,
-                hasil: hasil,
-                diamonds: d * c // Kirim total koin buat slider
+                tipe: tipe || "GIFT",
+                hasil: hasil || "Terima kasih!",
+                diamonds: d * c // Ini buat slider
             });
         });
     });
