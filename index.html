@@ -59,7 +59,15 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // FIREBASE CONFIG TETAP PAKAI PUNYA LU
-        const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com" };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo",
+            authDomain: "sos-pro-cd66d.firebaseapp.com",
+            databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com",
+            projectId: "sos-pro-cd66d",
+            storageBucket: "sos-pro-cd66d.appspot.com",
+            messagingSenderId: "879343847954",
+            appId: "1:879343847954:web:cc0b959202055fc252e6cb"
+        };
         firebase.initializeApp(firebaseConfig);
         const socket = io();
         let activeProfiles = {};
