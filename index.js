@@ -8,7 +8,6 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
-app.get('/panel-admin', (req, res) => { res.sendFile(__dirname + '/Panel-1990-aa.html'); });
 
 let tiktokConn;
 
@@ -23,13 +22,21 @@ io.on('connection', (socket) => {
             socket.emit('status', 'Gagal!');
         });
 
-        const sendPhoto = (dataLive) => {
+        // SETIAP CHAT MASUK KIRIM KE FRONTEND
+        tiktokConn.on('chat', (dataLive) => {
+            io.emit('chat', {
+                nickname: dataLive.nickname,
+                comment: dataLive.comment
+            });
+        });
+
+        // LOGIKA CEK HADIAH (KHODAM, JODOH, DLL)
+        tiktokConn.on('gift', (dataLive) => {
             let hasilCek = "";
             let tipe = "";
             const g = dataLive.giftName;
             const c = dataLive.repeatCount;
 
-            // LOGIKA SESUAI PERINTAH LO
             if (g === 'Rose') {
                 tipe = "CEK JODOH";
                 hasilCek = c >= 10 ? "Detail: Jodohmu inisial A, orang dekat, setia!" : "Singkat: Jodoh sudah dekat.";
@@ -39,25 +46,17 @@ io.on('connection', (socket) => {
             } else if (g === 'GG') {
                 tipe = "CEK KHODAM";
                 hasilCek = c >= 10 ? "Detail: Khodam Macan Putih Sakti Siliwangi!" : "Singkat: Khodam Kucing Putih.";
-            } else if (g === 'Aku Cinta Kamu' || g === 'Cornetto') {
-                tipe = "CEK ASMARA";
-                hasilCek = c >= 7 ? "Detail: Pasanganmu sangat serius mau menikah!" : "Singkat: Dia rindu kamu.";
-            } else if (g === 'Ros') { // Pengecekan Keuangan
-                tipe = "CEK KEUANGAN";
-                hasilCek = c >= 5 ? "Detail: Tabungan akan naik drastis tahun ini!" : "Singkat: Keuangan aman.";
             }
 
-            io.emit('munculFoto', { 
-                url: dataLive.profilePictureUrl, 
-                nickname: dataLive.nickname, 
-                tipe: tipe,
-                hasil: hasilCek,
-                isGift: !!hasilCek 
-            });
-        };
-
-        tiktokConn.on('chat', (dataLive) => { io.emit('chat', dataLive); });
-        tiktokConn.on('gift', sendPhoto);
+            if (tipe !== "") {
+                io.emit('hasilCekKartu', { 
+                    url: dataLive.profilePictureUrl, 
+                    nickname: dataLive.nickname, 
+                    tipe: tipe,
+                    hasil: hasilCek
+                });
+            }
+        });
     });
 });
 
