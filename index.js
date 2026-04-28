@@ -8,6 +8,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
+app.get('/panel-admin', (req, res) => { res.sendFile(__dirname + '/Panel-1990-aa.html'); });
 
 let tiktokConn;
 
@@ -19,32 +20,44 @@ io.on('connection', (socket) => {
         tiktokConn.connect().then(state => {
             socket.emit('status', 'OK');
         }).catch(err => {
-            socket.emit('status', 'Gagal! Akun tidak Live.');
+            socket.emit('status', 'Gagal!');
         });
 
-        tiktokConn.on('gift', (dataLive) => {
-            // LOGIKA CEK HADIAH
+        const sendPhoto = (dataLive) => {
             let hasilCek = "";
-            const { giftName, repeatCount, nickname } = dataLive;
+            let tipe = "";
+            const g = dataLive.giftName;
+            const c = dataLive.repeatCount;
 
-            if (giftName === 'Rose') {
-                hasilCek = repeatCount >= 10 ? `${nickname}, Jodohmu detail: Inisial A, setia, orang dekat!` : `${nickname}, Jodohmu sudah ada tapi kamu cuek.`;
-            } else if (giftName === 'Donut') {
-                hasilCek = repeatCount >= 5 ? `${nickname}, Rezeki detail: Bulan depan ada uang kaget melimpah!` : `${nickname}, Rezeki lancar aman terkendali.`;
-            } else if (giftName === 'GG') {
-                hasilCek = repeatCount >= 10 ? `${nickname}, Khodam detail: Macan Putih Prabu Siliwangi sakti!` : `${nickname}, Khodam kamu: Kelinci Hitam.`;
-            } else if (giftName === 'Cornetto') { // Asmara
-                hasilCek = repeatCount >= 7 ? `${nickname}, Asmara detail: Dia sangat mencintaimu dan mau serius.` : `${nickname}, Asmara: Dia lagi kangen kamu.`;
+            // LOGIKA SESUAI PERINTAH LO
+            if (g === 'Rose') {
+                tipe = "CEK JODOH";
+                hasilCek = c >= 10 ? "Detail: Jodohmu inisial A, orang dekat, setia!" : "Singkat: Jodoh sudah dekat.";
+            } else if (g === 'Donut') {
+                tipe = "CEK REZEKI";
+                hasilCek = c >= 5 ? "Detail: Rezeki besar menanti bulan depan!" : "Singkat: Rezeki lancar.";
+            } else if (g === 'GG') {
+                tipe = "CEK KHODAM";
+                hasilCek = c >= 10 ? "Detail: Khodam Macan Putih Sakti Siliwangi!" : "Singkat: Khodam Kucing Putih.";
+            } else if (g === 'Aku Cinta Kamu' || g === 'Cornetto') {
+                tipe = "CEK ASMARA";
+                hasilCek = c >= 7 ? "Detail: Pasanganmu sangat serius mau menikah!" : "Singkat: Dia rindu kamu.";
+            } else if (g === 'Ros') { // Pengecekan Keuangan
+                tipe = "CEK KEUANGAN";
+                hasilCek = c >= 5 ? "Detail: Tabungan akan naik drastis tahun ini!" : "Singkat: Keuangan aman.";
             }
 
-            if (hasilCek) io.emit('hasilRamalan', hasilCek);
-            io.emit('munculFoto', dataLive);
-        });
+            io.emit('munculFoto', { 
+                url: dataLive.profilePictureUrl, 
+                nickname: dataLive.nickname, 
+                tipe: tipe,
+                hasil: hasilCek,
+                isGift: !!hasilCek 
+            });
+        };
 
         tiktokConn.on('chat', (dataLive) => { io.emit('chat', dataLive); });
-        tiktokConn.on('member', (dataLive) => { io.emit('memberJoin', dataLive); });
-        tiktokConn.on('leave', (dataLive) => { io.emit('memberLeave', dataLive); });
-        tiktokConn.on('like', (dataLive) => { io.emit('munculFoto', dataLive); });
+        tiktokConn.on('gift', sendPhoto);
     });
 });
 
