@@ -17,30 +17,41 @@ io.on('connection', (socket) => {
         tiktokConn = new WebcastPushConnection(data.user);
         tiktokConn.connect().then(() => socket.emit('status', 'OK'));
 
-        // Bubble Join & Like
         tiktokConn.on('member', (dataLive) => {
-            io.emit('event_visual', { type: 'join', img: dataLive.profilePictureUrl });
+            io.emit('event_visual', { type: 'join', user: dataLive.nickname, img: dataLive.profilePictureUrl });
         });
+
         tiktokConn.on('like', (dataLive) => {
-            io.emit('event_visual', { type: 'like', img: dataLive.profilePictureUrl });
+            io.emit('event_visual', { type: 'like', user: dataLive.nickname, img: dataLive.profilePictureUrl });
         });
+
         tiktokConn.on('chat', (dataLive) => {
             io.emit('chat_masuk', { user: dataLive.nickname, text: dataLive.comment });
         });
 
-        // Gift masuk Slider & Kartu
         tiktokConn.on('gift', (dataLive) => {
-            const g = dataLive.giftName; const c = dataLive.repeatCount; const d = dataLive.diamondCount;
-            let hasil = (g === 'Rose') ? "Jodohmu inisial A" : (g === 'GG') ? "Khodam Macan Putih" : "Terima Kasih!";
-            let tipe = (g === 'Rose') ? "CEK JODOH" : (g === 'GG') ? "CEK KHODAM" : "GIFT";
+            let hasil = ""; let tipe = "";
+            const g = dataLive.giftName; 
+            const c = dataLive.repeatCount;
+            const d = dataLive.diamondCount;
 
-            io.emit('kartu_cek', {
-                img: dataLive.profilePictureUrl,
-                user: dataLive.nickname,
-                tipe: tipe,
-                hasil: hasil,
-                diamonds: d * c
-            });
+            if (g === 'Rose') {
+                tipe = "CEK JODOH";
+                hasil = c >= 10 ? "Jodohmu inisial A, setia banget!" : "Jodohmu sudah dekat.";
+            } else if (g === 'GG') {
+                tipe = "CEK KHODAM";
+                hasil = c >= 10 ? "Khodam Macan Sakti Prabu Siliwangi!" : "Khodam Kucing Putih.";
+            }
+
+            if (tipe) {
+                io.emit('kartu_cek', {
+                    img: dataLive.profilePictureUrl,
+                    user: dataLive.nickname,
+                    tipe: tipe,
+                    hasil: hasil,
+                    diamonds: d * c // Buat slider
+                });
+            }
         });
     });
 });
