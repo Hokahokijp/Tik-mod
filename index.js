@@ -15,41 +15,31 @@ io.on('connection', (socket) => {
     socket.on('setTarget', (data) => {
         if (tiktokConn) tiktokConn.disconnect();
         tiktokConn = new WebcastPushConnection(data.user);
-        
         tiktokConn.connect().then(() => socket.emit('status', 'OK'));
 
+        // Bubble Join & Like
         tiktokConn.on('member', (dataLive) => {
-            io.emit('event_visual', { type: 'join', user: dataLive.nickname, img: dataLive.profilePictureUrl });
+            io.emit('event_visual', { type: 'join', img: dataLive.profilePictureUrl });
         });
-
         tiktokConn.on('like', (dataLive) => {
-            io.emit('event_visual', { type: 'like', user: dataLive.nickname, img: dataLive.profilePictureUrl });
+            io.emit('event_visual', { type: 'like', img: dataLive.profilePictureUrl });
         });
-
         tiktokConn.on('chat', (dataLive) => {
             io.emit('chat_masuk', { user: dataLive.nickname, text: dataLive.comment });
         });
 
+        // Gift masuk Slider & Kartu
         tiktokConn.on('gift', (dataLive) => {
-            let hasil = ""; let tipe = "";
-            const g = dataLive.giftName; const c = dataLive.repeatCount;
-            const d = dataLive.diamondCount;
+            const g = dataLive.giftName; const c = dataLive.repeatCount; const d = dataLive.diamondCount;
+            let hasil = (g === 'Rose') ? "Jodohmu inisial A" : (g === 'GG') ? "Khodam Macan Putih" : "Terima Kasih!";
+            let tipe = (g === 'Rose') ? "CEK JODOH" : (g === 'GG') ? "CEK KHODAM" : "GIFT";
 
-            if (g === 'Rose') {
-                tipe = "CEK JODOH";
-                hasil = c >= 10 ? "Jodohmu inisial A, setia banget!" : "Jodohmu sudah dekat.";
-            } else if (g === 'GG') {
-                tipe = "CEK KHODAM";
-                hasil = c >= 10 ? "Khodam Macan Sakti Prabu Siliwangi!" : "Khodam Kucing Putih.";
-            }
-
-            // Kirim ke frontend termasuk data koin untuk slider
             io.emit('kartu_cek', {
                 img: dataLive.profilePictureUrl,
                 user: dataLive.nickname,
-                tipe: tipe || "GIFT",
-                hasil: hasil || "Terima kasih!",
-                diamonds: d * c // Ini buat slider
+                tipe: tipe,
+                hasil: hasil,
+                diamonds: d * c
             });
         });
     });
