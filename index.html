@@ -2,52 +2,115 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="referrer" content="no-referrer">
-    <title>TikTok Overlay Realtime</title>
+    <title>TikTok Live Melayang</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; font-family: 'Arial', sans-serif; }
-        
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 1000; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .hidden { display: none; }
-
-        /* Bubble Style */
-        .bubble-event {
-            position: absolute; width: 70px; height: 70px; border-radius: 50%;
-            border: 3px solid white; background-size: cover; background-position: center;
-            animation: floatUp 4s linear forwards; pointer-events: none;
-        }
-        .heart-icon { position: absolute; bottom: -5px; right: -5px; font-size: 25px; }
-
-        @keyframes floatUp {
-            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-            10% { opacity: 1; }
-            100% { transform: translateY(-150px) scale(1.1); opacity: 0; }
+        /* Dasar Layar HP */
+        body { 
+            margin: 0; 
+            padding: 0;
+            width: 100vw; 
+            height: 100vh; 
+            background: transparent; 
+            overflow: hidden; 
+            font-family: sans-serif;
         }
 
-        /* Kartu Cek Khodam/Jodoh */
-        #card-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        #menu { 
+            position: fixed; top: 10px; left: 10px; z-index: 1000; 
+            background: white; padding: 10px; border-radius: 8px;
+            display: flex; gap: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        #target { width: 120px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        .hidden { display: none !important; }
+
+        /* Gelembung Melayang Bebas */
+        .bubble {
+            position: absolute;
+            width: 65px; /* Ukuran pas untuk layar HP */
+            height: 65px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 10;
+            /* Animasi Gerak Acak */
+            animation: terbang 5s linear forwards;
+        }
+
+        .heart {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            font-size: 24px;
+        }
+
+        /* Animasi Melayang dari Bawah ke Atas secara Acak */
+        @keyframes terbang {
+            0% {
+                transform: translateY(110vh) translateX(0) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(90vh) translateX(10px) scale(1);
+            }
+            50% {
+                /* Gerakan miring di tengah agar random */
+                transform: translateY(50vh) translateX(-20px) scale(1.1);
+            }
+            100% {
+                transform: translateY(-20vh) translateX(20px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Kartu Hasil (Khodam/Jodoh) - Disesuaikan untuk HP */
+        #card-container {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            padding: 20px;
+        }
         .kartu {
-            background: rgba(0,0,0,0.85); border: 4px solid gold; border-radius: 15px;
-            padding: 20px; width: 320px; text-align: center; color: white;
-            display: none; box-shadow: 0 0 30px gold;
+            background: rgba(0,0,0,0.9);
+            border: 3px solid gold;
+            border-radius: 20px;
+            padding: 20px;
+            width: 90%; /* Supaya tidak melebar keluar HP */
+            max-width: 300px;
+            text-align: center;
+            color: white;
+            display: none;
+            animation: muncul 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 25px gold;
+        }
+        @keyframes muncul {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
 <div id="menu">
-    <input type="text" id="target" placeholder="Username TikTok">
-    <button onclick="mulai()">KONEK</button>
-    <div id="log-status" style="font-size: 12px; margin-top: 5px; color: gray;">Siap.</div>
+    <input type="text" id="target" placeholder="@username">
+    <button onclick="mulai()" style="background: #25f4ee; border: none; padding: 5px 15px; border-radius: 4px; font-weight: bold;">GO</button>
 </div>
 
 <div id="card-container">
     <div id="kartu" class="kartu">
-        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; border-radius:4px;">TIPE</div>
-        <br><img id="t_foto" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid white;"><br>
-        <div id="t_nama" style="font-size:18px; color:gold; margin:10px 0;">@user</div>
-        <div id="t_hasil" style="font-size:22px; font-weight:bold; color:cyan;">HASILNYA</div>
+        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; padding:2px; border-radius:5px; margin-bottom:10px;">TIPE</div>
+        <img id="t_foto" src="" style="width:70px; height:70px; border-radius:50%; border:2px solid white;">
+        <div id="t_nama" style="font-size:16px; color:gold; margin:5px 0;">@user</div>
+        <div id="t_hasil" style="font-size:20px; font-weight:bold; color:#00fff2;">HASILNYA</div>
     </div>
 </div>
 
@@ -56,36 +119,36 @@
 
     function mulai() {
         const user = document.getElementById('target').value;
-        if(!user) return alert("Isi username!");
-        
-        document.getElementById('log-status').innerText = "Menghubungkan...";
-        socket.emit('setTarget', { user: user });
+        if(user) {
+            socket.emit('setTarget', { user: user });
+            document.getElementById('menu').classList.add('hidden');
+        }
     }
 
-    socket.on('status_konek', (res) => {
-        document.getElementById('log-status').innerText = res.message;
-        if(res.success) document.getElementById('menu').classList.add('hidden');
-    });
-
-    // Menangani Visual Join & Like
     socket.on('event_visual', (data) => {
-        const el = document.createElement('div');
-        el.className = 'bubble-event';
-        el.style.backgroundImage = `url('${data.img}')`;
-        el.style.left = (Math.random() * 85) + '%';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        
+        // Posisi horizontal random (5% sampai 85% agar tidak keluar layar)
+        const posisiAcak = Math.floor(Math.random() * 80) + 5;
+        bubble.style.left = posisiAcak + '%';
+        
+        // Foto Profil
+        bubble.style.backgroundImage = `url('${data.img}')`;
         
         if (data.type === 'like') {
-            el.innerHTML = '<span class="heart-icon">❤️</span>';
-            el.style.borderColor = '#ff4b4b';
+            bubble.innerHTML = '<span class="heart">❤️</span>';
+            bubble.style.borderColor = '#ff4b4b';
         } else {
-            el.style.borderColor = '#00fff2';
+            bubble.style.borderColor = '#25f4ee';
         }
 
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 4000);
+        document.body.appendChild(bubble);
+        
+        // Hapus elemen setelah animasi selesai (5 detik)
+        setTimeout(() => bubble.remove(), 5000);
     });
 
-    // Menangani Kartu Cek (Kado)
     socket.on('kartu_cek', (data) => {
         const k = document.getElementById('kartu');
         document.getElementById('t_tipe').innerText = data.tipe;
@@ -94,7 +157,7 @@
         document.getElementById('t_hasil').innerText = data.hasil;
         
         k.style.display = 'block';
-        setTimeout(() => k.style.display = 'none', 7000);
+        setTimeout(() => k.style.display = 'none', 6000);
     });
 </script>
 </body>
