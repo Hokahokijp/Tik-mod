@@ -2,169 +2,100 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>TikTok Overlay Full Event</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <meta name="referrer" content="no-referrer">
+    <title>TikTok Overlay Realtime</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
-        #auth-container { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; display: flex; align-items: center; justify-content: center; color: white; }
-        #menu { position: fixed; top: 10px; left: 10px; z-index: 500; background: white; padding: 15px; border-radius: 10px; }
-        .hidden { display: none !important; }
+        body { margin: 0; background: transparent; overflow: hidden; font-family: 'Arial', sans-serif; }
+        
+        #menu { position: fixed; top: 10px; left: 10px; z-index: 1000; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .hidden { display: none; }
 
-        /* --- STYLE SLIDER (TAMBAHAN) --- */
-        #slider-container {
-            position: fixed; top: 10px; right: 10px; width: 250px;
-            display: flex; flex-direction: column; gap: 8px; z-index: 400;
-        }
-        .slider-item {
-            display: flex; align-items: center; background: rgba(0,0,0,0.8);
-            border: 2px solid gold; border-radius: 50px; padding: 5px 15px;
-            color: white; animation: slideIn 0.5s ease;
-        }
-        .slider-item img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; margin-right: 10px; }
-        .rank-tag { font-weight: bold; color: gold; margin-right: 5px; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-
-        /* VISUAL UNTUK JOIN & LIKE (KODE ASLI LO) */
+        /* Bubble Style */
         .bubble-event {
-            position: absolute; width: 80px; height: 80px; border-radius: 50%;
-            border: 3px solid white; background-size: cover;
-            animation: floatUp 3s forwards; z-index: 10;
+            position: absolute; width: 70px; height: 70px; border-radius: 50%;
+            border: 3px solid white; background-size: cover; background-position: center;
+            animation: floatUp 4s linear forwards; pointer-events: none;
         }
-        .heart-icon { position: absolute; bottom: -10px; right: -10px; font-size: 30px; }
+        .heart-icon { position: absolute; bottom: -5px; right: -5px; font-size: 25px; }
+
         @keyframes floatUp {
             0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-            20% { transform: translateY(80vh) scale(1); opacity: 1; }
-            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(-150px) scale(1.1); opacity: 0; }
         }
 
+        /* Kartu Cek Khodam/Jodoh */
         #card-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
         .kartu {
-            background: rgba(0,0,0,0.9); border: 5px solid gold; border-radius: 20px;
-            padding: 30px; width: 400px; text-align: center; color: white;
-            box-shadow: 0 0 40px gold; display: none; animation: zoom 0.4s ease-out;
+            background: rgba(0,0,0,0.85); border: 4px solid gold; border-radius: 15px;
+            padding: 20px; width: 320px; text-align: center; color: white;
+            display: none; box-shadow: 0 0 30px gold;
         }
     </style>
 </head>
 <body>
 
-<div id="slider-container"></div>
-
-<div id="auth-container">
-    <div style="background:white; color:black; padding:20px; border-radius:10px; text-align:center; width:280px;">
-        <h3>Admin Login</h3>
-        <input type="email" id="email" placeholder="Email" style="width:90%; padding:8px; margin-bottom:5px;">
-        <input type="password" id="pass" placeholder="Password" style="width:90%; padding:8px; margin-bottom:10px;">
-        <button onclick="doLogin()" style="width:100%; padding:10px; background:gold; border:none; font-weight:bold;">MASUK</button>
-    </div>
-</div>
-
-<div id="menu" class="hidden">
+<div id="menu">
     <input type="text" id="target" placeholder="Username TikTok">
-    <button onclick="mulai()" style="background:green; color:white; border:none; padding:8px;">KONEK</button>
+    <button onclick="mulai()">KONEK</button>
+    <div id="log-status" style="font-size: 12px; margin-top: 5px; color: gray;">Siap.</div>
 </div>
 
 <div id="card-container">
     <div id="kartu" class="kartu">
-        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; padding:5px; border-radius:5px;">TIPE</div><br>
-        <img id="t_foto" src="" style="width:100px; border-radius:50%; border:3px solid white;"><br>
-        <div id="t_nama" style="font-size:20px; color:gold; margin:10px 0;">@user</div>
-        <div id="t_hasil" style="font-size:28px; font-weight:bold; color:#00fff2;">HASILNYA</div>
+        <div id="t_tipe" style="background:gold; color:black; font-weight:bold; border-radius:4px;">TIPE</div>
+        <br><img id="t_foto" src="" style="width:80px; height:80px; border-radius:50%; border:2px solid white;"><br>
+        <div id="t_nama" style="font-size:18px; color:gold; margin:10px 0;">@user</div>
+        <div id="t_hasil" style="font-size:22px; font-weight:bold; color:cyan;">HASILNYA</div>
     </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyAU18VAqfQG4XeCxqbWVZWe6zxh9wnywmo", databaseURL: "https://sos-pro-cd66d-default-rtdb.firebaseio.com" };
-    firebase.initializeApp(firebaseConfig);
     const socket = io();
 
-    function doLogin() {
-        firebase.auth().signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('pass').value)
-        .then(() => { document.getElementById('auth-container').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); });
+    function mulai() {
+        const user = document.getElementById('target').value;
+        if(!user) return alert("Isi username!");
+        
+        document.getElementById('log-status').innerText = "Menghubungkan...";
+        socket.emit('setTarget', { user: user });
     }
 
-    // --- SISTEM SUARA ---
-    let antreanSuara = []; let sedangNgomong = false;
-    function bicara(teks) {
-        antreanSuara.push(teks);
-        if (!sedangNgomong) prosesAntrean();
-    }
-    function prosesAntrean() {
-        if (antreanSuara.length === 0) { sedangNgomong = false; return; }
-        sedangNgomong = true;
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(antreanSuara.shift());
-        msg.lang = 'id-ID'; msg.onend = () => prosesAntrean();
-        window.speechSynthesis.speak(msg);
-    }
+    socket.on('status_konek', (res) => {
+        document.getElementById('log-status').innerText = res.message;
+        if(res.success) document.getElementById('menu').classList.add('hidden');
+    });
 
-    // --- FUNGSI SLIDER (URUTAN 1, 2, 3) ---
-    let listPenyumbang = [];
-    function updateSlider(data) {
-        let userSama = listPenyumbang.findIndex(u => u.user === data.user);
-        if (userSama !== -1) {
-            listPenyumbang[userSama].diamonds += data.diamonds;
-        } else {
-            listPenyumbang.push({ user: data.user, img: data.img, diamonds: data.diamonds });
-        }
-
-        // Urutkan koin paling banyak ke atas
-        listPenyumbang.sort((a, b) => b.diamonds - a.diamonds);
-        listPenyumbang = listPenyumbang.slice(0, 3); // Cuma ambil Top 3
-
-        const container = document.getElementById('slider-container');
-        container.innerHTML = '';
-        listPenyumbang.forEach((user, index) => {
-            container.innerHTML += `
-                <div class="slider-item">
-                    <span class="rank-tag">#${index + 1}</span>
-                    <img src="${user.img}">
-                    <div style="flex-grow:1; font-size:14px;"><b>${user.user}</b><br>💰 ${user.diamonds}</div>
-                </div>`;
-        });
-    }
-
-    // VISUAL JOIN & LIKE (ASLI LO)
+    // Menangani Visual Join & Like
     socket.on('event_visual', (data) => {
         const el = document.createElement('div');
         el.className = 'bubble-event';
         el.style.backgroundImage = `url('${data.img}')`;
-        el.style.left = Math.random() * 80 + '%';
+        el.style.left = (Math.random() * 85) + '%';
         
         if (data.type === 'like') {
             el.innerHTML = '<span class="heart-icon">❤️</span>';
-            el.style.borderColor = 'red';
+            el.style.borderColor = '#ff4b4b';
         } else {
             el.style.borderColor = '#00fff2';
         }
 
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 3000);
+        setTimeout(() => el.remove(), 4000);
     });
 
-    socket.on('chat_masuk', (data) => bicara(`${data.user} bilang ${data.text}`));
-
+    // Menangani Kartu Cek (Kado)
     socket.on('kartu_cek', (data) => {
-        // Panggil fungsi slider kado
-        updateSlider(data);
-
+        const k = document.getElementById('kartu');
         document.getElementById('t_tipe').innerText = data.tipe;
         document.getElementById('t_foto').src = data.img;
         document.getElementById('t_nama').innerText = data.user;
         document.getElementById('t_hasil').innerText = data.hasil;
-        const k = document.getElementById('kartu');
+        
         k.style.display = 'block';
-        bicara(`${data.user}, hasil ${data.tipe} kamu adalah ${data.hasil}`);
-        setTimeout(() => k.style.display = 'none', 8000);
+        setTimeout(() => k.style.display = 'none', 7000);
     });
-
-    function mulai() {
-        socket.emit('setTarget', { user: document.getElementById('target').value });
-        document.getElementById('menu').classList.add('hidden');
-        bicara("Sistem aktif.");
-    }
 </script>
 </body>
 </html>
